@@ -1,527 +1,315 @@
-# TOXIGLOW — WOUND EARLY WARNING PLATFORM
+# ToxiGlow — AI-Powered Wound Analysis Platform
 
-Build a single-page wound assessment application using **Streamlit + Python + Custom CSS/JS + Plotly + OpenCV + MobileSAM**.
+> Early warning system for wound deterioration. Upload a photo, get a clinical-grade assessment in seconds.
 
----
-
-## Global Design System
-
-### Design Philosophy: "Clinical Compassion"
-
-The interface must feel like a calm, well-lit examination room. Trustworthy. Clean. Human. Never cold, never alarmist. The UI communicates: "You are in safe hands. We will help you understand what's happening."
-
-### Fonts
-Google Fonts import: **Inter** (300, 400, 500, 600, 700) and **Instrument Serif** (400, 400 italic).
-- `--font-body: 'Inter', sans-serif` → applied to all UI, labels, data, buttons, narrative text
-- `--font-display: 'Instrument Serif', serif` → applied to section headings, large display numbers, severity score, hero headline
-
-### CSS Custom Properties (HSL values — no `hsl()` wrapper)
-```css
---bg:           210 20% 99%     /* near-white with blue undertone */
---surface:      0 0% 100%       /* pure white cards */
---surface-alt:  210 20% 96%     /* light gray-blue for alternate backgrounds */
---text:         220 20% 10%     /* near-black with blue depth */
---text-secondary: 215 15% 40%   /* muted blue-gray for descriptions */
---text-muted:   215 15% 60%     /* placeholder, captions */
---stroke:       215 20% 90%     /* subtle borders */
---stroke-hover: 215 20% 80%     /* hover borders */
---accent:       210 100% 40%    /* medical blue */
---accent-hover: 210 100% 33%    /* darker blue hover */
---accent-light: 210 100% 95%    /* light blue backgrounds */
---severity-green:  160 80% 35%  /* healthy, healing */
---severity-yellow: 38 90% 50%   /* caution */
---severity-orange: 28 90% 50%   /* warning */
---severity-red:    0 70% 45%    /* critical, urgent */
---overlay:       220 20% 10%    /* dark overlay */
-```
-
-### Custom CSS Utility Classes
-- `.text-display` → `font-family: var(--font-display); font-style: italic;`
-- `.accent-gradient` → `linear-gradient(135deg, #4E85BF 0%, #89AACC 100%)`
-- `.severity-gradient-green` → `linear-gradient(135deg, #00A86B 0%, #00C853 100%)`
-- `.severity-gradient-yellow` → `linear-gradient(135deg, #F5A623 0%, #FFD600 100%)`
-- `.severity-gradient-orange` → `linear-gradient(135deg, #F57C00 0%, #FF9100 100%)`
-- `.severity-gradient-red` → `linear-gradient(135deg, #D32F2F 0%, #FF1744 100%)`
-- `.glass-card` → `background: hsl(var(--surface)); border: 1px solid hsl(var(--stroke)); backdrop-filter: blur(12px); border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);`
-- `.glass-card-hover` → `.glass-card` + `transition: all 0.3s ease; &:hover { border-color: hsl(var(--accent) / 0.3); box-shadow: 0 2px 8px rgba(0,102,204,0.08), 0 8px 24px rgba(0,0,0,0.06); transform: translateY(-2px); }`
-
-### Custom Animations (injected via CSS)
-```css
-@keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(1.6); opacity: 0; }
-}
-
-@keyframes breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.03); }
-}
-
-@keyframes fade-slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fade-slide-down {
-  from { opacity: 0; transform: translateY(-12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes count-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes draw-arc {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes severity-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--severity-red) / 0.4); }
-  50% { box-shadow: 0 0 0 16px hsl(var(--severity-red) / 0); }
-}
-
-@keyframes scan-line {
-  0% { top: 0%; }
-  100% { top: 100%; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-```
-
-### Animation Utility Classes
-- `.animate-fade-slide-up` → `animation: fade-slide-up 0.6s ease-out forwards`
-- `.animate-fade-slide-down` → `animation: fade-slide-down 0.4s ease-out forwards`
-- `.animate-breathe` → `animation: breathe 4s ease-in-out infinite`
-- `.animate-severity-pulse` → `animation: severity-pulse 2s ease-in-out infinite`
-- `.animate-float` → `animation: float 4s ease-in-out infinite`
-- `.animate-float-delayed` → `animation: float 4s ease-in-out 1.5s infinite`
-- `.stagger-1` → `animation-delay: 0.1s`
-- `.stagger-2` → `animation-delay: 0.2s`
-- `.stagger-3` → `animation-delay: 0.3s`
-- `.stagger-4` → `animation-delay: 0.4s`
-
-### Forced Clean Theme
-No dark mode toggle. `body` gets `bg-[hsl(var(--bg))] text-[hsl(var(--text))] font-body antialiased`.
+![Status](https://img.shields.io/badge/status-Production%20Ready-brightgreen)
+![Version](https://img.shields.io/badge/version-2.1.0-blue)
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![Node](https://img.shields.io/badge/Node-16%2B-green)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ---
 
-## Page Structure
+## Overview
+
+ToxiGlow is a full-stack wound assessment web application combining computer vision with a cinematic dark UI. Patients upload wound photos, the AI engine segments tissue, detects infection markers, and produces a severity score — all in under 5 seconds.
+
+Built for **BioNova Innovathon 2026**.
+
+---
+
+## Live Features
+
+### For Patients
+- 📸 Camera capture or drag-and-drop image upload
+- 🧠 AI tissue classification (granulation, slough, necrosis, epithelial, etc.)
+- 📏 Automated wound measurement (area, perimeter, diameter)
+- ⚡ Infection risk detection with visual markers
+- 📊 Severity score (0–100) with animated gauge
+- 📥 Downloadable PDF assessment report
+- 🗂️ Personal assessment history with trend tracking
+
+### For Clinicians
+- ✍️ Publish articles, guides, and case studies
+- 📂 Draft/publish workflow with category tagging
+- 🏷️ Tag system for content organisation
+
+### For Admins
+- 📊 Analytics dashboard — live system metrics
+- 🏥 Condition inference from patient wound data
+- 📉 Severity distribution and tissue pattern analysis
+- 📥 CSV data export
+- 🕐 Time-period filtering (today / week / month / all)
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19 + Vite |
+| Styling | Custom CSS — dark glassmorphism |
+| Backend | FastAPI (Python) |
+| Database | SQLAlchemy + SQLite |
+| Image Processing | OpenCV + NumPy + Pillow |
+| AI Chat | OpenAI GPT (optional) |
+| PDF Reports | fpdf2 |
+| Auth | localStorage sessions + role-based access |
+
+---
+
+## UI & Animations
+
+The interface uses a **"Clinical Compassion"** dark cinematic design system:
+
+- **Particle field** — 22 rising cyan particles on the hero
+- **Animated gradient orbs** — breathing radial glows (cyan, purple, green)
+- **Typing animation** — cycling feature descriptions with blinking cursor
+- **Scroll-reveal** — `IntersectionObserver`-based staggered entrance animations
+- **Animated counters** — stats count up when scrolled into view
+- **Scanner rings** — pulsing concentric circles during analysis
+- **Severity pulse** — critical wound cards animate with a red glow
+- **Tissue progress bars** — animated fill on results load
+- **Before/After wipe slider** — drag to compare raw vs annotated image
+- **Glass cards** with hover lift and glow effects
+
+Fonts: **Instrument Serif** (display) + **Inter** (body)
+
+---
+
+## Project Structure
 
 ```
-app.py
-├── Navigation Bar (fixed, glass)
-├── Section 1: Hero
-├── Section 2: Image Capture
-├── Section 3: Processing (conditional)
-├── Section 4: Results Dashboard (conditional)
-│   ├── 4A: Annotated Image
-│   ├── 4B: Metric Cards (Severity, Infection, Tissue)
-│   ├── 4C: Measurements (conditional)
-│   ├── 4D: Narrative Assessment
-│   ├── 4E: Action Recommendation
-│   ├── 4F: Comparison (conditional)
-│   └── 4G: Action Buttons + Disclaimer
-├── Section 5: How It Works
-├── Section 6: Footer
-└── Global States: Loading, Error, Empty, Edge Cases
+toxiglow/
+├── backend/
+│   ├── main.py                  # FastAPI app, all endpoints
+│   ├── models.py                # SQLAlchemy models
+│   ├── database.py              # DB config
+│   ├── requirements.txt
+│   ├── .env.example             # Environment variable template
+│   └── engine/
+│       ├── analytics.py         # Admin analytics engine
+│       ├── comparison.py        # Assessment comparison
+│       ├── infection_detector.py
+│       ├── measurement.py
+│       ├── narrative.py
+│       ├── recommendation.py
+│       ├── segmentation.py
+│       ├── severity.py
+│       └── tissue_classifier.py
+│   └── utils/
+│       ├── image_processing.py
+│       ├── report.py            # PDF generation
+│       └── visualization.py
+│
+└── frontend/
+    ├── src/
+    │   ├── App.jsx              # Main app + Hero + HowItWorks
+    │   ├── index.css            # Full design system + animations
+    │   ├── config.js            # Centralized API config
+    │   └── components/
+    │       ├── Navbar.jsx
+    │       ├── WoundScanner.jsx
+    │       ├── ResultsDashboard.jsx
+    │       ├── SeverityGauge.jsx
+    │       ├── TissueChart.jsx
+    │       ├── PatientDashboard.jsx
+    │       ├── ClinicianPortal.jsx
+    │       ├── AdminDashboard.jsx
+    │       ├── AuthModal.jsx
+    │       ├── ErrorBoundary.jsx
+    │       └── Footer.jsx
+    ├── .env.example
+    └── package.json
 ```
 
 ---
 
-## Section 0: Navigation Bar
+## Getting Started
 
-Fixed top, z-50, full width.
+### Prerequisites
+- Python 3.8+
+- Node.js 16+
+- pip
 
-**Default state (scrollY < 50):**
-- `bg-transparent` → no background
-- `py-5` → taller padding
+### 1. Clone the repo
 
-**Scrolled state (scrollY ≥ 50):**
-- `bg-[hsl(var(--surface))]/80 backdrop-blur-xl border-b border-[hsl(var(--stroke))]`
-- `py-3` → compact padding
-- `shadow-sm`
-- Transition: all 0.3s ease
+```bash
+git clone https://github.com/tahanawab4848/ToxiGlow.git
+cd ToxiGlow
+```
 
-**Inner container:** `max-w-[1200px] mx-auto px-6 md:px-10 flex items-center justify-between`
+### 2. Start the backend
 
-**Left: Logo**
-- A clean medical cross icon (➕) + "ToxiGlow" in `font-display italic text-xl text-[hsl(var(--text))]`
-- Subtle accent gradient underline on hover (2px height, scales from 0→1 on hover)
+```bash
+cd backend
+pip install -r requirements.txt
+cp .env.example .env        # fill in your values
+python main.py
+```
 
-**Right: Nav Links**
-- `text-sm font-medium text-[hsl(var(--text-secondary))]` with `hover:text-[hsl(var(--accent))]` transition
-- Links: "Assess" | "How It Works" | "About"
-- Spacing: `gap-8`
-- Active link: `text-[hsl(var(--accent))]` with a small dot indicator below
-- Smooth scroll anchors to respective sections
+Backend runs at `http://127.0.0.1:8000`  
+API docs at `http://127.0.0.1:8000/docs`
 
-**Mobile (<768px):**
-- Logo centered
-- Hamburger menu (three stacked lines, animates to X on open)
-- Slide-down menu with same links, `bg-[hsl(var(--surface))] border-b border-[hsl(var(--stroke))]`
+### 3. Start the frontend
 
----
+```bash
+cd frontend
+npm install
+cp .env.example .env.local  # set VITE_API_URL if needed
+npm run dev
+```
 
-## Section 1: Hero
+Frontend runs at `http://localhost:5173`
 
-Full viewport height. `min-h-screen flex items-center justify-center relative overflow-hidden`.
-
-### Background
-- Clean gradient: `bg-[hsl(var(--bg))]` with a subtle radial glow centered at top-right
-- Radial glow: `radial-gradient(ellipse 80% 60% at 70% 20%, hsl(210, 100%, 97%) 0%, transparent 60%)`
-- Subtle grid pattern overlay: repeating 60px squares, 1px lines at `hsl(var(--stroke))` at 40% opacity
-- Purely CSS, no video
-
-### Floating Elements (Decorative)
-- 6 floating circles/shapes with `.accent-gradient` at 8-15% opacity
-- Each has `.animate-float` with different delays
-- Sizes: 40px to 120px
-- Scattered across the background, blurred (filter: blur(40px))
-- Adds depth without distraction
-
-### Center Content (z-10)
-Stacked vertically, text-center, max-w-[650px]:
-
-**Eyebrow:**
-- `text-xs uppercase tracking-[0.3em] text-[hsl(var(--text-muted))] mb-6`
-- "EARLY WARNING SYSTEM"
-- Class: `animate-fade-slide-down`
-
-**Headline:**
-- `text-5xl md:text-7xl lg:text-8xl font-display italic leading-[0.95] tracking-tight text-[hsl(var(--text))] mb-6`
-- "The early warning <br/>your wound needs."
-- Class: `animate-fade-slide-up` (name-reveal pattern)
-
-**Subheadline:**
-- `text-base md:text-lg text-[hsl(var(--text-secondary))] max-w-[480px] mx-auto mb-10 leading-relaxed`
-- "Take a photo. Know within seconds whether your wound needs attention — before a small problem becomes an emergency."
-- Class: `animate-fade-slide-up stagger-1`
-
-**Trust Indicators (horizontal row, centered):**
-- Three pills with `gap-3`
-- Each: `px-4 py-2 rounded-full bg-[hsl(var(--accent-light))] text-[hsl(var(--accent))] text-xs font-medium`
-- "📸 Instant photo analysis"
-- "🩺 Clinically-grounded assessment"
-- "🔒 Images never leave your device"
-- Class: `animate-fade-slide-up stagger-2`
-
-**CTA Button:**
-- `mt-10`
-- `px-8 py-4 rounded-full text-base font-semibold text-white`
-- Background: `.accent-gradient`
-- `hover:scale-105 hover:shadow-lg hover:shadow-[hsl(var(--accent))/0.3]`
-- `transition-all duration-300 ease-out`
-- Text: "ASSESS YOUR WOUND →"
-- Arrow slides 6px right on hover
-- Smooth scrolls to Section 2
-- Class: `animate-fade-slide-up stagger-3`
-
-### Scroll Indicator (bottom center)
-- `absolute bottom-8 left-1/2 -translate-x-1/2`
-- `text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--text-muted))]` — "SCROLL"
-- Below: `w-px h-8 bg-[hsl(var(--stroke))] mx-auto mt-2 relative overflow-hidden`
-- Inner animated line: `absolute top-0 left-0 w-full h-full bg-[hsl(var(--accent))] animate-[scroll-down_1.5s_ease-in-out_infinite]`
-- Keyframe: translateY(-100%) → translateY(200%)
-
-### Disclaimer (subtle, bottom of hero)
-- `text-xs text-[hsl(var(--text-muted))] max-w-[420px] mx-auto text-center mt-12`
-- "This tool provides early warning indicators. It is not a medical diagnosis. Always consult a healthcare provider."
-- Class: `animate-fade-slide-up stagger-4`
+> **Windows shortcut:** double-click `run_backend.bat` and `run_frontend.bat`
 
 ---
 
-## Section 2: Image Capture
+## Environment Variables
 
-`py-16 md:py-24 bg-[hsl(var(--surface-alt))]`
+**backend/.env**
+```env
+AI_API_KEY=your_openai_key_here     # optional — enables AI chat
+AI_API_BASE=https://api.openai.com/v1
+AI_MODEL=gpt-3.5-turbo
+DATABASE_URL=sqlite:///./pathoglow.db
+FRONTEND_URL=http://localhost:5173
+```
 
-### Header (centered)
-- `text-center mb-12`
-- Eyebrow: `w-8 h-px bg-[hsl(var(--stroke))] mx-auto mb-4` + "CAPTURE" in `text-xs uppercase tracking-[0.3em] text-[hsl(var(--text-muted))]`
-- Heading: "Your wound, *captured*" — "captured" in `font-display italic`
-- `text-3xl md:text-4xl font-bold text-[hsl(var(--text))] mb-3`
-- Subtext: "Position the wound in good light. Place a coin or ruler nearby for size. Hold steady."
-- `text-base text-[hsl(var(--text-secondary))] max-w-[500px] mx-auto`
-
-### Two-Column Layout
-`max-w-[1000px] mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-6`
-
-**Column A: Webcam Capture**
-- `.glass-card p-6 flex flex-col items-center`
-- When INACTIVE:
-  - Large camera icon (📷) `text-5xl opacity-30 mb-4`
-  - "Click to activate camera" `text-sm text-[hsl(var(--text-muted))]`
-  - Entire card clickable, `cursor-pointer`
-- When ACTIVE:
-  - Live video feed, `rounded-xl overflow-hidden border-2 border-[hsl(var(--accent))]`
-  - "LIVE" indicator: `absolute top-3 left-3 flex items-center gap-2`
-  - Red dot (8px, pulsing, `bg-[hsl(var(--severity-red))] rounded-full animate-pulse`) + "LIVE" `text-xs font-semibold text-[hsl(var(--severity-red))]`
-- Button: "CAPTURE PHOTO" — `w-full mt-4 py-3 rounded-full font-semibold text-white bg-[hsl(var(--accent))] hover:bg-[hsl(var(--accent-hover))] transition-all`
-
-**Column B: File Upload**
-- `.glass-card p-6 flex flex-col items-center justify-center min-h-[320px]`
-- When EMPTY:
-  - Upload icon (☁️) `text-5xl opacity-30 mb-4`
-  - "Drag & drop or click to browse" `text-sm text-[hsl(var(--text-secondary))]`
-  - "JPG, PNG, HEIC — Max 20MB" `text-xs text-[hsl(var(--text-muted))] mt-2`
-  - `border-2 border-dashed border-[hsl(var(--stroke))] rounded-xl`
-  - Drag-over state: `border-[hsl(var(--accent))] bg-[hsl(var(--accent-light))]`
-- When FILE SELECTED:
-  - `border-solid border-[hsl(var(--accent))]`
-  - Image thumbnail: `max-h-[200px] rounded-lg object-contain mb-3`
-  - Filename + size in `text-sm text-[hsl(var(--text))]`
-  - "USE THIS IMAGE" button
-
-**OR Divider (desktop):**
-- `hidden md:flex absolute left-1/2 -translate-x-1/2`
-- Vertical line + "OR" circle
+**frontend/.env.local**
+```env
+VITE_API_URL=http://127.0.0.1:8000
+```
 
 ---
 
-## Section 3: Image Confirmation
+## API Endpoints
 
-Appears after capture/upload. `max-w-[700px] mx-auto px-6 py-12 text-center`.
-
-- Captured image: `max-h-[450px] mx-auto rounded-2xl shadow-lg mb-8`
-- Two buttons side-by-side:
-  - "ANALYZE WOUND" — `py-4 px-8 rounded-full font-semibold text-white bg-[hsl(var(--accent))] hover:bg-[hsl(var(--accent-hover))] transition-all` with 🔬 icon
-  - "Retake" — `py-4 px-8 rounded-full font-medium text-[hsl(var(--text-secondary))] border-2 border-[hsl(var(--stroke))] hover:border-[hsl(var(--accent))] transition-all` with ↩️ icon
-- Guidance: "Analysis is instant and stays on your device." `text-xs text-[hsl(var(--text-muted))] mt-4`
-
----
-
-## Section 4: Processing
-
-Appears after clicking ANALYZE. `max-w-[500px] mx-auto px-6 py-16 text-center`.
-
-**Processing Animation:**
-- NOT a spinner. A pulsing ring:
-  - 3 concentric circles centered on a wound icon (🩹, 28px)
-  - Each circle: `border-2 border-[hsl(var(--accent))] rounded-full absolute`
-  - Animation: `pulse-ring 1.5s ease-out infinite`
-  - Delays: 0s, 0.3s, 0.6s
-  - Size: 60px, 80px, 100px diameters
-
-**Title:** "Analyzing your wound..." `text-lg font-semibold mt-8 mb-6`
-
-**Stage Indicators (vertical list):**
-Each row: `flex items-center gap-3 text-sm text-[hsl(var(--text-secondary))] mb-3`
-
-1. "Detecting wound boundaries..." → becomes "✓ Wound mapped" in `text-[hsl(var(--severity-green))]`
-2. "Classifying tissue types..." → becomes "✓ Tissue analyzed"
-3. "Checking infection indicators..." → becomes "✓ Indicators checked"
-4. "Generating your assessment..." → becomes "✓ Assessment ready"
-
-Stages complete sequentially. Checkmark draws itself with SVG stroke animation.
-
-**Timeout (>30s):**
-- ⚠️ icon, "Taking longer than expected..."
-- "Try again" button
-
-**Error:**
-- ⚠️ icon, specific error message, retry guidance
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/analyze` | Analyze wound image |
+| GET | `/api/demo` | Run demo analysis |
+| POST | `/api/compare` | Compare two assessments |
+| POST | `/api/report` | Generate PDF report |
+| POST | `/api/auth/register` | Register user |
+| GET | `/api/auth/user/{email}` | Get user profile |
+| POST | `/api/assessments/save` | Save assessment |
+| GET | `/api/assessments/history` | Get patient history |
+| DELETE | `/api/assessments/{id}` | Delete assessment |
+| GET | `/api/articles` | List articles |
+| POST | `/api/articles` | Create article |
+| PUT | `/api/articles/{id}` | Update article |
+| DELETE | `/api/articles/{id}` | Delete article |
+| GET | `/api/analytics` | Admin analytics |
+| POST | `/api/chat` | AI chat |
 
 ---
 
-## Section 5: Results Dashboard
+## User Roles
 
-Appears after processing. Smooth fade-slide-up. `max-w-[1100px] mx-auto px-6 py-12`.
+| Feature | Patient | Clinician | Admin |
+|---------|---------|-----------|-------|
+| Analyze wounds | ✅ | ✅ | — |
+| Save & view history | ✅ | ✅ | — |
+| Write articles | — | ✅ | — |
+| View analytics | — | — | ✅ |
 
----
-
-### 5A: Annotated Wound Image
-
-`.glass-card overflow-hidden relative mb-8`
-
-- User's image: `max-h-[500px] w-full object-contain rounded-xl`
-- **Overlays rendered ON the image:**
-  - Wound boundary: `3px solid #00BCD4` with `box-shadow: 0 0 12px rgba(0,188,212,0.3)`
-  - Tissue classification overlay at 40% opacity:
-    - Red (#FF5252) = Granulation
-    - Yellow (#FFD600) = Slough
-    - Dark brown (#3E2723) = Necrosis
-    - Light green (#69F0AE) = Epithelial
-  - Scale bar (bottom-left): `bg-black/60 text-white text-xs px-3 py-1.5 rounded-md` — "├── 1 cm ──┤" (only if reference detected)
-  - Tissue legend (top-right): small white card with 4 color swatches + labels
-
-**If no wound detected:** Banner across top: "No clear wound boundary detected." `bg-amber-50 text-amber-700`
+**Creating an admin account:**
+```sql
+-- Run in SQLite against backend/pathoglow.db
+INSERT INTO user (email, name, role) VALUES ('admin@example.com', 'Admin', 'admin');
+```
 
 ---
 
-### 5B: Metric Cards
+## Database Schema
 
-`grid grid-cols-1 md:grid-cols-3 gap-6 mb-8`
-
-**Card 1: Severity Score**
-- `.glass-card p-6 text-center`
-- Title: "Severity Score" `text-xs uppercase tracking-[0.2em] text-[hsl(var(--text-muted))] mb-6`
-- SVG gauge: semi-circular arc with gradient color bands
-  - 0–30: `hsl(var(--severity-green))`
-  - 31–60: `hsl(var(--severity-yellow))`
-  - 61–80: `hsl(var(--severity-orange))`
-  - 81–100: `hsl(var(--severity-red))`
-  - Needle animates from 0 to score over 1.2s, `cubic-bezier(0.34, 1.56, 0.64, 1)`
-- Score number: `text-5xl font-display italic` in severity color
-- Label: "Mild Concern" / "Moderate" / "Significant" / "Critical" `text-lg font-semibold`
-
-**Card 2: Infection Indicators**
-- `.glass-card p-6`
-- Title: same style
-- Risk icon (large, centered, 40px):
-  - Low: 🛡️ green
-  - Moderate: ⚠️ yellow
-  - High: 🟠 orange
-  - Critical: 🔴 red
-- Risk text: "Low Risk" / "Moderate Risk" / "High Risk" / "Critical Risk"
-- Indicator checklist:
-  - Erythema: ✓ or ⚠️ with cm measurement
-  - Exudate: ✓ or ⚠️ with description
-  - Tissue health: ✓ or ⚠️ with necrosis %
-  - Wound edge: ✓ or ⚠️
-
-**Card 3: Tissue Composition**
-- `.glass-card p-6 text-center`
-- Title: same style
-- Plotly donut chart (clean, white bg, no gridlines)
-- Segments animate on draw
-- Center text: "Wound Bed"
-- Legend below with percentages and explanations
+```
+users          → id, email, name, role, created_at
+assessments    → id, user_email, area, perimeter, tissues, severity_score,
+                 severity_cat, narrative, recommendation, risk_level,
+                 annotated_image, created_at
+articles       → id, author_email, title, content, category, tags,
+                 published, created_at, updated_at
+```
 
 ---
 
-### 5C: Measurements (Conditional)
+## Performance
 
-`mb-8` — only if reference object detected.
-- `.glass-card p-6`
-- Three inline stats: "X.X cm² Area" | "X.X cm Perimeter" | "X.X cm Max Diameter"
-- If no reference: informational note "Add a coin or ruler next time for measurements"
-
----
-
-### 5D: Narrative Assessment
-
-`.glass-card p-6 mb-8 border-l-4 border-[hsl(var(--accent))]`
-
-- Title: "📋 Assessment Summary" `text-lg font-semibold mb-4`
-- Body: 4–6 sentence plain-language paragraph
-  - 6th-grade reading level
-  - Never says "diagnosis"
-  - Uses "signs consistent with..." / "may indicate..." / "suggests..."
-  - Mentions healthy findings first, then concerns
-  - Ends with clear guidance
-  - `text-base leading-relaxed text-[hsl(var(--text))]`
+| Metric | Value |
+|--------|-------|
+| Frontend bundle | 289 KB (84 KB gzipped) |
+| Build time | ~700ms |
+| Image analysis | 2–4 seconds |
+| PDF generation | 1–2 seconds |
+| Analytics query | < 500ms |
 
 ---
 
-### 5E: Action Recommendation
+## Roadmap
 
-`.glass-card p-6 mb-8` with colored left border (6px)
-
-**Four variants:**
-
-| Severity | Background | Border | Icon | Title |
-|---|---|---|---|---|
-| Mild (0–30) | `bg-green-50` | `hsl(var(--severity-green))` | ✅ | "Continue Monitoring — Healing as Expected" |
-| Moderate (31–60) | `bg-amber-50` | `hsl(var(--severity-yellow))` | ⚠️ | "Schedule a Clinical Review — Moderate Concern" |
-| Severe (61–80) | `bg-orange-50` | `hsl(var(--severity-orange))` | 🟠 | "Seek Medical Attention Within 24 Hours" |
-| Critical (81–100) | `bg-red-50` | `hsl(var(--severity-red))` | 🔴 | "URGENT — Seek Emergency Care Immediately" |
-
-Critical variant: `.animate-severity-pulse` on the border.
-
-Body text: specific, actionable, calm but clear. Mentions specific findings. Gives timeframe.
+- [ ] Real-time wound progression alerts
+- [ ] Telemedicine appointment booking
+- [ ] React Native mobile app
+- [ ] EHR system integration
+- [ ] Multi-language support
+- [ ] HIPAA-compliant encryption
 
 ---
 
-### 5F: Comparison (Conditional)
+## Troubleshooting
 
-Collapsible `.glass-card p-6 mb-8`.
-- Header: "📅 Compare with Previous Assessment"
-- Expanded: side-by-side images, delta indicators
-  - Area: ↓ XX% (green) or ↑ XX% (red)
-  - Tissue changes
-  - Healing trajectory: ON TRACK / SLOW / STALLED / DETERIORATING
+**Backend won't start**
+```bash
+pip install -r requirements.txt
+python main.py
+```
 
----
+**Frontend build fails**
+```bash
+rm -rf node_modules
+npm install
+npm run build
+```
 
-### 5G: Action Buttons + Disclaimer
-
-`text-center`
-
-- "📥 DOWNLOAD ASSESSMENT REPORT" — `py-4 px-8 rounded-full font-semibold text-white bg-[hsl(var(--accent))]`
-- "🔄 NEW ASSESSMENT" — `py-4 px-8 rounded-full font-medium border-2 border-[hsl(var(--stroke))]`
-- Disclaimer: `text-xs text-[hsl(var(--text-muted))] max-w-[600px] mx-auto mt-6`
-
----
-
-## Section 6: How It Works
-
-`py-16 md:py-24 bg-[hsl(var(--surface-alt))]`
-
-### Header
-- Eyebrow + "How ToxiGlow *works*" (italic)
-
-**Three Cards (grid grid-cols-1 md:grid-cols-3 gap-6):**
-Each: `.glass-card-hover p-8 text-center`
-
-1. **📸 Capture** — "Take a clear photo of your wound with your phone or upload an existing image. Add a coin for automatic size measurement."
-2. **🔬 Analyze** — "Our AI detects wound boundaries, classifies tissue types, and checks for visual signs of infection — all on your device, in seconds."
-3. **🩺 Act** — "Get a clear, plain-language assessment with specific guidance: monitor, schedule a review, or seek urgent care."
-
-Connecting arrows between cards (desktop): SVG dashed lines with animated flow.
+**Database reset**
+```bash
+del backend\pathoglow.db
+python main.py    # auto-recreates tables on startup
+```
 
 ---
 
-## Section 7: Footer
+## Changelog
 
-`bg-[hsl(var(--text))] text-[hsl(var(--text-muted))] py-12`
+### v2.1.0 — June 2026
+- ✨ Rich animations: particles, typing effect, scroll-reveal, orbs, animated counters
+- ✨ Admin analytics dashboard with condition detection
+- 🎯 Simplified frontend — removed dead components
+- 🐛 Fixed blank main page (broken component imports)
+- 🐛 Fixed navbar invisible on initial load
+- 📦 Bundle size optimised
 
-Three columns:
-1. **ToxiGlow** — "An early warning system for wound deterioration. Not a diagnostic device."
-2. **BioNova Innovathon 2026** — "Built with Streamlit, OpenCV, MobileSAM, and clinical wound assessment frameworks."
-3. **Privacy** — "All processing happens on your device. Images are never uploaded or stored."
+### v2.0.0 — May 2026
+- 🎉 Full React + FastAPI rewrite
+- ✅ Role-based auth (Patient / Clinician / Admin)
+- ✅ Wound analysis engine with computer vision
+- ✅ PDF report generation
+- ✅ Patient history tracking
+- ✅ Clinician article system
+- ✅ AI chat integration (OpenAI)
 
-Bottom bar: "© 2026 ToxiGlow. In an emergency, call your local emergency services immediately."
-
----
-
-## Global States
-
-### Loading (Initial Page Load)
-- Full-screen white overlay
-- Centered: ToxiGlow logo with subtle breathe animation
-- Fades out over 0.6s
-
-### Error States
-- Specific, helpful messages. Never generic "Something went wrong."
-- Always offer a retry path.
-- Friendly tone, not technical blame.
-
-### Empty States
-- Informational, not broken. Guide the user to the next step.
-
-### Edge Cases
-- No wound detected: clear message, retry guidance
-- Poor image quality: specific reason (blurry/dark/bright), retry guidance
-- No reference object: informational note, not an error
-- Webcam denied: alternative upload path
-- File too large / wrong format: specific error
+### v1.0.0 — April 2026
+- 🎯 MVP — basic wound analysis prototype
 
 ---
 
-## Technical Stack
-- **Framework:** Streamlit
-- **Computer Vision:** OpenCV, scikit-image, MobileSAM, scikit-learn
-- **Numerical:** NumPy, SciPy
-- **Charts:** Plotly (clean theme, transparent backgrounds)
-- **PDF:** fpdf2
-- **Custom Styling:** Injected CSS via `st.markdown(unsafe_allow_html=True)`
-- **Custom JS:** Scroll animations, SVG gauge, counters via `st.components.v1.html()`
+## Disclaimer
+
+ToxiGlow provides early warning indicators only. It is **not a medical diagnostic device**. Always consult a qualified healthcare provider for medical advice. In an emergency, call your local emergency services immediately.
 
 ---
 
-## Build This Exactly
-
-Every section specified. Every state defined. Every animation choreographed. Every pixel intentional. ToxiGlow is an early warning system that feels like a trusted medical instrument — precise, calm, and genuinely helpful to someone who is worried and needs clear guidance.
+*Built with ❤️ for BioNova Innovathon 2026*
