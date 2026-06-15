@@ -38,10 +38,15 @@ export default function Navbar({ user, onLogout, onAuthClick, onViewChange, curr
     <nav
       className="tg-navbar tg-navbar-scrolled"
       style={{
-        transform: scrolled ? 'translateY(0)' : 'translateY(-100%)',
-        opacity: scrolled ? 1 : 0,
-        pointerEvents: scrolled ? 'auto' : 'none',
-        transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease'
+        transform: 'translateY(0)',
+        opacity: 1,
+        pointerEvents: 'auto',
+        transition: 'background 0.3s ease, box-shadow 0.3s ease',
+        background: scrolled
+          ? 'hsla(220, 20%, 9%, 0.85)'
+          : 'rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
       }}
     >
       <div className="tg-navbar-inner">
