@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API_BASE_URL, safeLocalStorage } from '../config';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -20,65 +20,248 @@ function passwordStrength(pwd) {
   if (/[A-Z]/.test(pwd)) score++;
   if (/[0-9]/.test(pwd)) score++;
   if (/[^A-Za-z0-9]/.test(pwd)) score++;
-  return score; // 0-4
+  return Math.min(score, 4);
 }
 
-// ── Toast component ───────────────────────────────────────────────────────────
-function Toast({ msg, type }) {
-  const bg = type === 'error' ? 'rgba(220,38,38,0.15)' : 'rgba(0,210,255,0.12)';
-  const border = type === 'error' ? 'rgba(220,38,38,0.4)' : 'rgba(0,210,255,0.3)';
-  const icon = type === 'error' ? '⚠️' : '✅';
+// ── Animated input field ─────────────────────────────────────────────────────
+function InputField({ label, type = 'text', value, onChange, placeholder, required = false, showToggle = false, toggleState, onToggle }) {
+  const [focused, setFocused] = useState(false);
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => { setLocalValue(value); }, [value]);
+
   return (
-    <div style={{
-      background: bg, border: `1px solid ${border}`, borderRadius: 12,
-      padding: '10px 16px', fontSize: '0.82rem', color: 'rgba(255,255,255,0.9)',
-      display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16,
-      animation: 'fade-slide-down 0.3s ease-out forwards'
-    }}>
-      <span>{icon}</span> {msg}
+    <div style={{ position: 'relative', marginBottom: 20 }}>
+      <label style={{
+        position: 'absolute',
+        left: 20,
+        top: focused || localValue ? 10 : '50%',
+        transform: focused || localValue ? 'translateY(0) scale(0.85)' : 'translateY(-50%) scale(1)',
+        color: focused ? '#00d2ff' : 'rgba(255,255,255,0.4)',
+        fontSize: focused || localValue ? '0.7rem' : '0.9rem',
+        fontWeight: 600,
+        letterSpacing: '0.15em',
+        textTransform: 'uppercase',
+        pointerEvents: 'none',
+        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex: 2,
+        background: focused || localValue ? 'hsl(220 25% 6%)' : 'transparent',
+        padding: focused || localValue ? '0 8px' : '0',
+      }}>
+        {label}
+      </label>
+      <div style={{ position: 'relative' }}>
+        <input
+          type={showToggle ? (toggleState ? 'text' : 'password') : type}
+          value={localValue}
+          onChange={(e) => { setLocalValue(e.target.value); onChange && onChange(e.target.value); }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          required={required}
+          placeholder={focused ? '' : placeholder}
+          style={{
+            width: '100%',
+            padding: focused || localValue ? '28px 48px 12px 20px' : '18px 48px 18px 20px',
+            background: 'rgba(255,255,255,0.02)',
+            border: `1.5px solid ${focused ? '#00d2ff' : 'rgba(255,255,255,0.08)'}`,
+            borderRadius: 16,
+            color: 'white',
+            fontSize: '0.95rem',
+            outline: 'none',
+            transition: 'all 0.25s ease',
+            boxShadow: focused ? '0 0 20px rgba(0,210,255,0.15)' : 'none',
+          }}
+        />
+        {showToggle && (
+          <button
+            type="button"
+            onClick={onToggle}
+            style={{
+              position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '1rem', opacity: 0.5, transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = 1}
+            onMouseLeave={e => e.currentTarget.style.opacity = 0.5}
+          >
+            {toggleState ? '👁️' : '🔒'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-// ── Strength bar ──────────────────────────────────────────────────────────────
-function StrengthBar({ score }) {
-  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
-  const colors = ['', '#ef4444', '#f59e0b', '#22c55e', '#00d2ff'];
-  if (!score) return null;
+// ── Password strength indicator ──────────────────────────────────────────────
+function StrengthMeter({ score }) {
+  const labels = ['Too weak', 'Weak', 'Fair', 'Good', 'Strong'];
+  const colors = ['#ef4444', '#f59e0b', '#fbbf24', '#22c55e', '#00d2ff'];
+  if (score === 0) return null;
   return (
-    <div style={{ marginTop: 6 }}>
-      <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+    <div style={{ marginTop: -10, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
         {[1,2,3,4].map(i => (
           <div key={i} style={{
-            flex: 1, height: 3, borderRadius: 9999,
-            background: i <= score ? colors[score] : 'rgba(255,255,255,0.08)',
-            transition: 'background 0.3s ease'
+            flex: 1, height: 4, borderRadius: 999,
+            background: i <= score ? colors[score] : 'rgba(255,255,255,0.06)',
+            transition: 'background 0.3s ease',
           }} />
         ))}
       </div>
-      <div style={{ fontSize: '0.68rem', color: colors[score], fontWeight: 600 }}>
-        {labels[score]}
+      <div style={{ textAlign: 'right', fontSize: '0.7rem', fontWeight: 600, color: colors[score], letterSpacing: '0.05em' }}>
+        {labels[score]} {score >= 3 ? '✓' : ''}
       </div>
     </div>
   );
 }
 
+// ── Role selector cards ───────────────────────────────────────────────────────
+function RoleSelector({ selected, onSelect }) {
+  const roles = [
+    { id: 'patient', icon: '🩹', label: 'Patient', color: '#00d2ff', desc: 'Track wounds & get AI analysis' },
+    { id: 'clinician', icon: '🩺', label: 'Clinician', color: '#00e676', desc: 'Publish articles & guides' },
+  ];
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
+        Account Type
+      </div>
+      <div style={{ display: 'flex', gap: 12 }}>
+        {roles.map(role => (
+          <div
+            key={role.id}
+            onClick={() => onSelect(role.id)}
+            style={{
+              flex: 1,
+              padding: '16px 12px',
+              borderRadius: 16,
+              border: `1.5px solid ${selected === role.id ? role.color + '60' : 'rgba(255,255,255,0.06)'}`,
+              background: selected === role.id ? role.color + '08' : 'rgba(255,255,255,0.02)',
+              cursor: 'pointer',
+              transition: 'all 0.25s ease',
+              textAlign: 'center',
+            }}
+            onMouseEnter={e => {
+              if (selected !== role.id) {
+                e.currentTarget.style.borderColor = role.color + '40';
+                e.currentTarget.style.background = role.color + '05';
+              }
+            }}
+            onMouseLeave={e => {
+              if (selected !== role.id) {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+              }
+            }}
+          >
+            <div style={{ fontSize: '1.8rem', marginBottom: 8 }}>{role.icon}</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: selected === role.id ? role.color : 'rgba(255,255,255,0.7)', marginBottom: 4 }}>
+              {role.label}
+            </div>
+            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', lineHeight: 1.3 }}>
+              {role.desc}
+            </div>
+            {selected === role.id && (
+              <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center' }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: role.color, boxShadow: `0 0 10px ${role.color}` }} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Tab switcher ─────────────────────────────────────���───────────────────────
+function TabSwitcher({ active, onChange }) {
+  return (
+    <div style={{
+      display: 'flex', background: 'rgba(255,255,255,0.03)', borderRadius: 999, padding: 4, marginBottom: 28,
+      border: '1px solid rgba(255,255,255,0.06)',
+    }}>
+      {['login', 'signup'].map(tab => (
+        <button
+          key={tab}
+          onClick={() => onChange(tab)}
+          style={{
+            flex: 1,
+            padding: '12px 20px',
+            borderRadius: 999,
+            border: 'none',
+            background: active === tab ? 'rgba(0,210,255,0.1)' : 'transparent',
+            color: active === tab ? '#00d2ff' : 'rgba(255,255,255,0.5)',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            transition: 'all 0.25s ease',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {active === tab && (
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(135deg, rgba(0,210,255,0.15) 0%, transparent 60%)',
+            }} />
+          )}
+          <span style={{ position: 'relative', zIndex: 1 }}>
+            {tab === 'login' ? 'Sign In' : 'Sign Up'}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Toast notification ───────────────────────────────────────────────────────
+function Toast({ message, type, onClose }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const bg = type === 'error' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(0, 210, 255, 0.12)';
+  const border = type === 'error' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(0, 210, 255, 0.3)';
+  const icon = type === 'error' ? '⚠️' : '✓';
+
+  return (
+    <div style={{
+      position: 'absolute', top: 20, left: 20, right: 20,
+      background, border: `1px solid ${border}`, borderRadius: 12,
+      padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
+      animation: 'fade-slide-down 0.3s ease-out',
+      zIndex: 10,
+    }}>
+      <span style={{ fontSize: '1.1rem' }}>{icon}</span>
+      <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>{message}</span>
+    </div>
+  );
+}
+
+// ── Main Auth Modal ──────────────────────────────────────────────────────────
 export default function AuthModal({ isOpen, onClose, initialTab = 'login', onAuthSuccess }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState('patient');  // 'patient' | 'clinician'
+  const [role, setRole] = useState('patient');
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => setMounted(true), 10);
+    } else {
+      setMounted(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
-
-  const showToast = (msg, type = 'error') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -87,27 +270,53 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onAut
 
     try {
       if (activeTab === 'signup') {
-        if (users[email]) { showToast('An account with this email already exists.'); setLoading(false); return; }
-        if (password.length < 6) { showToast('Password must be at least 6 characters.'); setLoading(false); return; }
+        if (users[email]) {
+          setToast({ msg: 'An account with this email already exists.', type: 'error' });
+          setLoading(false);
+          return;
+        }
+        if (password.length < 6) {
+          setToast({ msg: 'Password must be at least 6 characters.', type: 'error' });
+          setLoading(false);
+          return;
+        }
+        if (!email.includes('@') || !email.includes('.')) {
+          setToast({ msg: 'Please enter a valid email address.', type: 'error' });
+          setLoading(false);
+          return;
+        }
+
         const name = fullName.trim() || email.split('@')[0];
         users[email] = { name, hash: btoa(password), role };
         saveUsers(users);
         saveSession(email, name, role);
 
-        // Sync to DB (best-effort — don't block on failure)
+        // Sync to DB
         fetch(`${API_BASE_URL}/api/auth/register`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, name, role }),
         }).catch(() => {});
 
-        showToast(`Welcome, ${name}! Your ${role} account is ready.`, 'success');
-        setTimeout(() => { onClose(); onAuthSuccess && onAuthSuccess(name); }, 1400);
+        setToast({ msg: `Welcome to ToxiGlow, ${name}!`, type: 'success' });
+        setTimeout(() => {
+          onClose();
+          onAuthSuccess && onAuthSuccess(name);
+          // Reset form
+          setEmail('');
+          setPassword('');
+          setFullName('');
+          setRole('patient');
+          setMounted(false);
+        }, 1500);
       } else {
         const user = users[email];
         if (!user || user.hash !== btoa(password)) {
-          showToast('Incorrect email or password.'); setLoading(false); return;
+          setToast({ msg: 'Invalid email or password.', type: 'error' });
+          setLoading(false);
+          return;
         }
-        // Fetch role from DB in case it was changed; fallback to localStorage
+
         let resolvedRole = user.role || 'patient';
         try {
           const r = await fetch(`${API_BASE_URL}/api/auth/user/${encodeURIComponent(email)}`);
@@ -115,208 +324,166 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onAut
         } catch { /* offline */ }
 
         saveSession(email, user.name, resolvedRole);
-        showToast(`Welcome back, ${user.name}!`, 'success');
-        setTimeout(() => { onClose(); onAuthSuccess && onAuthSuccess(user.name); }, 1200);
+        setToast({ msg: `Welcome back, ${user.name}!`, type: 'success' });
+        setTimeout(() => {
+          onClose();
+          onAuthSuccess && onAuthSuccess(user.name);
+          setEmail('');
+          setPassword('');
+          setMounted(false);
+        }, 1200);
       }
+    } catch (err) {
+      setToast({ msg: 'Something went wrong. Please try again.', type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
-
   const pwdScore = activeTab === 'signup' ? passwordStrength(password) : 0;
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+    <div
       style={{
-        background: 'rgba(0,0,0,0.85)',
-        backdropFilter: 'blur(16px)',
-        position: 'fixed',
-        top: 0, left: 0, right: 0, bottom: 0,
+        position: 'fixed', inset: 0, zIndex: 1000,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(0,0,0,0.9)',
+        backdropFilter: 'blur(20px)',
+        opacity: mounted ? 1 : 0,
+        transition: 'opacity 0.3s ease',
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget) { onClose(); setMounted(false); } }}
     >
-      <div 
-        className="liquid-glass w-full max-w-md p-8 rounded-3xl"
-        style={{
-          boxShadow: '0 24px 64px rgba(0, 210, 255, 0.15)',
-          background: 'rgba(255, 255, 255, 0.02)',
-          border: '1px solid rgba(255, 255, 255, 0.08)'
-        }}
-      >
-        {/* Toast */}
-        {toast && <Toast msg={toast.msg} type={toast.type} />}
+      {/* Glow effects */}
+      <div style={{
+        position: 'absolute', width: 500, height: 500, borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(0,210,255,0.08) 0%, transparent 70%)',
+        top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        pointerEvents: 'none',
+      }} />
 
-        {/* Header Tabs */}
-        <div className="flex border-b border-white/10 mb-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '1.5rem' }}>
-          <button
-            onClick={() => setActiveTab('login')}
-            className={`flex-1 pb-3 text-sm font-semibold tracking-wider uppercase transition-colors ${
-              activeTab === 'login' ? 'text-white border-b-2' : 'text-white/40 hover:text-white/60'
-            }`}
-            style={{
-              borderBottom: activeTab === 'login' ? '2px solid #00d2ff' : 'none',
-              paddingBottom: '0.75rem'
-            }}
-          >
-            Login
-          </button>
-          <button
-            onClick={() => setActiveTab('signup')}
-            className={`flex-1 pb-3 text-sm font-semibold tracking-wider uppercase transition-colors ${
-              activeTab === 'signup' ? 'text-white border-b-2' : 'text-white/40 hover:text-white/60'
-            }`}
-            style={{
-              borderBottom: activeTab === 'signup' ? '2px solid #00d2ff' : 'none',
-              paddingBottom: '0.75rem'
-            }}
-          >
-            Sign Up
-          </button>
+      {/* Modal card */}
+      <div style={{
+        width: '100%', maxWidth: 420,
+        background: 'rgba(20, 22, 30, 0.95)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 28,
+        padding: 36,
+        position: 'relative',
+        overflow: 'hidden',
+        transform: mounted ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(20px)',
+        transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        boxShadow: '0 32px 64px rgba(0,0,0,0.5), 0 0 100px rgba(0,210,255,0.08)',
+      }}>
+        {/* Toast */}
+        {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+
+        {/* Header with logo */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 56, height: 56, borderRadius: 16,
+            background: 'rgba(0,210,255,0.1)', border: '1px solid rgba(0,210,255,0.2)',
+            marginBottom: 16,
+            fontSize: '1.8rem',
+          }}>
+            🩹
+          </div>
+          <h2 style={{
+            fontFamily: 'var(--font-display)', fontStyle: 'italic',
+            fontSize: '1.8rem', color: 'white', margin: 0, marginBottom: 4,
+          }}>
+            Toxi<span style={{ color: '#00d2ff' }}>Glow</span>
+          </h2>
+          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+            {activeTab === 'login' ? 'Sign in to access your account' : 'Create your account to get started'}
+          </p>
         </div>
 
+        {/* Tab switcher */}
+        <TabSwitcher active={activeTab} onChange={setActiveTab} />
+
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          
+        <form onSubmit={handleSubmit}>
           {activeTab === 'signup' && (
             <>
-              {/* Role selector */}
-              <div>
-                <label className="text-[10px] text-white/50 uppercase tracking-widest font-mono" style={{ display: 'block', marginBottom: 8 }}>I am a…</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {[
-                    { v: 'patient',   label: '🩹 Patient',   accent: '#00d2ff' },
-                    { v: 'clinician', label: '🩺 Clinician', accent: '#00e676' },
-                  ].map(({ v, label, accent }) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setRole(v)}
-                      style={{
-                        flex: 1, padding: '10px 12px', borderRadius: 12, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-                        background: role === v ? accent + '18' : 'rgba(255,255,255,0.02)',
-                        border: `1.5px solid ${role === v ? accent + '60' : 'rgba(255,255,255,0.07)'}`,
-                        color: role === v ? accent : 'rgba(255,255,255,0.4)',
-                        transition: 'all 0.2s ease',
-                        boxShadow: role === v ? `0 0 12px ${accent}25` : 'none',
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                {role === 'clinician' && (
-                  <div style={{ fontSize: '0.68rem', color: '#00e676', marginTop: 6, paddingLeft: 4 }}>
-                    ✓ Clinician accounts can publish articles to the Knowledge Hub
-                  </div>
-                )}
-              </div>
-
-              {/* Full Name */}
-              <div className="flex flex-col gap-1" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label className="text-[10px] text-white/50 uppercase tracking-widest font-mono">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="John Doe"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="liquid-glass rounded-full px-5 py-3 text-white placeholder:text-white/20 text-sm"
-                  style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    outline: 'none'
-                  }}
-                />
-              </div>
+              <RoleSelector selected={role} onSelect={setRole} />
+              <InputField
+                label="Full Name"
+                value={fullName}
+                onChange={setFullName}
+                placeholder="John Doe"
+              />
             </>
           )}
 
-          <div className="flex flex-col gap-1" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <label className="text-[10px] text-white/50 uppercase tracking-widest font-mono">Email Address</label>
-            <input
-              type="email"
-              required
-              placeholder="user@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="liquid-glass rounded-full px-5 py-3 text-white placeholder:text-white/20 text-sm"
-              style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                outline: 'none'
-              }}
-            />
-          </div>
+          <InputField
+            label="Email"
+            type="email"
+            value={email}
+            onChange={setEmail}
+            placeholder="user@example.com"
+          />
 
-          <div className="flex flex-col gap-1" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <label className="text-[10px] text-white/50 uppercase tracking-widest font-mono">Password</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="liquid-glass rounded-full px-5 py-3 text-white placeholder:text-white/20 text-sm"
-                style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  outline: 'none',
-                  paddingRight: '3rem'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(v => !v)}
-                style={{
-                  position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
-                  fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none', cursor: 'pointer'
-                }}
-              >
-                {showPassword ? '🙈' : '👁️'}
-              </button>
-            </div>
-            {activeTab === 'signup' && <StrengthBar score={pwdScore} />}
-          </div>
+          <InputField
+            label="Password"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            placeholder="••••••••"
+            showToggle={true}
+            toggleState={showPassword}
+            onToggle={() => setShowPassword(!showPassword)}
+          />
 
-          <div style={{ paddingTop: '1rem', display: 'flex', gap: '1rem' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              className="liquid-glass rounded-full flex-1 py-3 text-white/70 hover:text-white hover:bg-white/5 transition-all text-sm font-semibold"
-              style={{
-                paddingTop: '0.75rem',
-                paddingBottom: '0.75rem'
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-full flex-1 py-3 text-black text-sm font-semibold"
-              style={{
-                backgroundColor: '#00d2ff',
-                boxShadow: '0 0 16px rgba(0, 210, 255, 0.4)',
-                paddingTop: '0.75rem',
-                paddingBottom: '0.75rem',
-                opacity: loading ? 0.6 : 1,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'opacity 0.2s ease'
-              }}
-            >
-              {loading ? '...' : activeTab === 'login' ? 'Access Portal' : 'Create Account'}
-            </button>
-          </div>
+          {activeTab === 'signup' && <StrengthMeter score={pwdScore} />}
 
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '16px',
+              borderRadius: 16,
+              border: 'none',
+              background: loading
+                ? 'rgba(255,255,255,0.1)'
+                : 'linear-gradient(135deg, #00d2ff 0%, #0094b3 100%)',
+              color: loading ? 'rgba(255,255,255,0.4)' : 'black',
+              fontSize: '0.95rem',
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              marginTop: 8,
+              boxShadow: loading ? 'none' : '0 8px 32px rgba(0,210,255,0.35)',
+              transition: 'all 0.25s ease',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <span style={{ position: 'relative', zIndex: 1 }}>
+              {loading ? (
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <span style={{ animation: 'pulse-dot 1s infinite' }}>●</span>
+                  <span style={{ animation: 'pulse-dot 1s infinite 0.2s' }}>●</span>
+                  <span style={{ animation: 'pulse-dot 1s infinite 0.4s' }}>●</span>
+                </span>
+              ) : (activeTab === 'login' ? 'Sign In' : 'Create Account')}
+            </span>
+          </button>
         </form>
 
-        {/* HUD Subtext status */}
-        <div className="mt-6 text-center text-[9px] text-white/30 font-mono tracking-wider" style={{ marginTop: '1.5rem' }}>
-          [ AUTH_PROTOCOL: TLS_1.3_ENCRYPTED ]
+        {/* Footer */}
+        <div style={{
+          marginTop: 28, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.06)',
+          textAlign: 'center',
+        }}>
+          <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', margin: 0, lineHeight: 1.5 }}>
+            By continuing, you agree to our Terms of Service and Privacy Policy.
+            <br />
+            <span style={{ opacity: 0.6 }}>All data is encrypted and stored securely.</span>
+          </p>
         </div>
       </div>
     </div>
