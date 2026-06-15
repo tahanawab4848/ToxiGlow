@@ -133,16 +133,64 @@ button {
   0%, 100% { stroke-dashoffset: 600; opacity: 0.3; }
   50% { stroke-dashoffset: 0; opacity: 1; }
 }
+@keyframes orbPulse {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.6; }
+  50% { transform: translateX(-50%) scale(1.15); opacity: 1; }
+}
+@keyframes particleRise {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateY(-100vh) translateX(calc(var(--drift, 40px) - 20px)) scale(0.3); opacity: 0; }
+}
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,210,255,0.3); }
+  50% { box-shadow: 0 0 24px rgba(0,210,255,0.7), 0 0 48px rgba(0,210,255,0.2); }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
 
 .animate-fade-slide-up { animation: fade-slide-up 0.6s ease-out forwards; }
 .animate-fade-slide-down { animation: fade-slide-down 0.4s ease-out forwards; }
 .animate-float { animation: float 4s ease-in-out infinite; }
 .animate-breathe { animation: breathe 4s ease-in-out infinite; }
+.animate-glow-pulse { animation: glow-pulse 2.5s ease-in-out infinite; }
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+  background-size: 200% auto;
+  animation: shimmer 2.5s linear infinite;
+}
 
 .stagger-1 { animation-delay: 0.1s; }
 .stagger-2 { animation-delay: 0.2s; }
 .stagger-3 { animation-delay: 0.3s; }
 .stagger-4 { animation-delay: 0.4s; }
+
+/* Scroll reveal base — used by useScrollReveal hook via inline styles */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
 
 /* Clinical HUD scanline overlay */
 .hud-scanline {
@@ -384,15 +432,18 @@ button {
   overflow: hidden;
   padding: 120px 24px 80px;
   text-align: center;
-  background-color: black;
+  background: radial-gradient(ellipse at 50% 0%, rgba(0,210,255,0.06) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 80%, rgba(100,0,255,0.04) 0%, transparent 50%),
+              #000;
 }
 
 .hero-glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(0, 210, 255, 0.05) 0%, transparent 70%);
+  background: radial-gradient(circle at 50% 40%, rgba(0, 210, 255, 0.07) 0%, transparent 65%);
   pointer-events: none;
   z-index: 2;
+  animation: orbPulse 6s ease-in-out infinite;
 }
 
 .hero-content {
@@ -421,6 +472,7 @@ button {
   letter-spacing: -0.02em;
   margin: 0 0 24px;
   color: white;
+  text-shadow: 0 0 80px rgba(0,210,255,0.15);
 }
 
 .hero-sub {
@@ -1112,7 +1164,9 @@ button {
 
 .how-card { 
   padding: 32px 24px; 
-  text-align: center; 
+  text-align: center;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease !important;
+  cursor: default;
 }
 
 .how-icon { 
