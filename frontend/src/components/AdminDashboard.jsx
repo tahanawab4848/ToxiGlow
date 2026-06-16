@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 
 export default function AdminDashboard({ user, onBack }) {
@@ -9,25 +9,24 @@ export default function AdminDashboard({ user, onBack }) {
 
   useEffect(() => {
     if (user?.role !== 'admin') {
-      setError('Unauthorized: Admin access required');
+      setTimeout(() => setError('Unauthorized: Admin access required'), 0);
       return;
     }
+    const fetchAnalytics = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/analytics?period=${filter}`);
+        if (!res.ok) throw new Error('Failed to fetch analytics');
+        const data = await res.json();
+        setAnalytics(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchAnalytics();
   }, [user, filter]);
-
-  const fetchAnalytics = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/analytics?period=${filter}`);
-      if (!res.ok) throw new Error('Failed to fetch analytics');
-      const data = await res.json();
-      setAnalytics(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (!analytics) {
     return (

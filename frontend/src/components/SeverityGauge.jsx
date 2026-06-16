@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-export default function SeverityGauge({ score, category }) {
+export default function SeverityGauge({ score }) {
   const [rotation, setRotation] = useState(-90); // Start at 0% (-90deg)
 
   useEffect(() => {

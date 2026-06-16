@@ -1,16 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { API_BASE_URL, hasMediaDevices, hasSpeechSynthesis } from '../config';
+import { useState, useRef, useEffect } from 'react';
+import { hasMediaDevices, hasSpeechSynthesis } from '../config';
 
 export default function WoundScanner({ onImageSelected, onDemoTrigger, error, setError }) {
   const [cameraActive, setCameraActive] = useState(false);
   const [stream, setStream] = useState(null);
-  const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
   
   // Voice Guidance state and refs
   const [voiceGuideActive, setVoiceGuideActive] = useState(true);
   const timersRef = useRef([]);
+
+  const clearVoiceTimers = () => {
+    timersRef.current.forEach(timer => clearTimeout(timer));
+    timersRef.current = [];
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -30,13 +37,7 @@ export default function WoundScanner({ onImageSelected, onDemoTrigger, error, se
     }
   };
 
-  const clearVoiceTimers = () => {
-    timersRef.current.forEach(timer => clearTimeout(timer));
-    timersRef.current = [];
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-  };
+
 
   const activateCamera = async () => {
     setError('');
@@ -112,17 +113,11 @@ export default function WoundScanner({ onImageSelected, onDemoTrigger, error, se
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragActive(false);
     setError('');
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {

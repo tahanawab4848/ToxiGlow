@@ -501,7 +501,7 @@ button {
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
 }
 
-.btn-cta {
+.btn-cta, button.btn-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -513,19 +513,21 @@ button {
   font-size: 0.95rem;
   box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  border: none;
+  cursor: pointer;
 }
 
-.btn-cta:hover {
+.btn-cta:hover, button.btn-cta:hover {
   transform: translateY(-2px) scale(1.03);
   box-shadow: 0 12px 32px rgba(255, 255, 255, 0.25);
 }
 
-.btn-cta span {
+.btn-cta span, button.btn-cta span {
   margin-left: 6px;
   transition: transform 0.2s ease;
 }
 
-.btn-cta:hover span {
+.btn-cta:hover span, button.btn-cta:hover span {
   transform: translateX(6px);
 }
 
@@ -1348,4 +1350,22 @@ button {
 
 @media (min-width: 1024px) {
   .text-7xl { font-size: 4.5rem; }
+}
+
+
+/* Button shine effect */
+.btn-cta:hover .btn-cta-shine,
+button.btn-cta:hover .btn-cta-shine {
+  opacity: 1;
+  animation: shimmer 1.5s ease-in-out;
+}
+
+.btn-cta-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0,210,255,0.15) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  border-radius: inherit;
 }

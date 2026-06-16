@@ -12,6 +12,7 @@ import re
 import random
 from datetime import datetime
 import os
+import hashlib
 from dotenv import load_dotenv
 import openai
 
@@ -81,8 +82,13 @@ class ChatRequest(BaseModel):
 # ── NEW: Database Pydantic schemas ────────────────────────────────────────────
 class UserRegisterRequest(BaseModel):
     email: str
+    password: str
     name: str
     role: str = "patient"   # "patient" | "clinician"
+
+class UserLoginRequest(BaseModel):
+    email: str
+    password: str
 
 class AssessmentSaveRequest(BaseModel):
     user_email: str
@@ -426,20 +432,45 @@ if __name__ == "__main__":
 # ============================================================================ #
 
 # ── Auth: register / get user ─────────────────────────────────────────────────
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
 @app.post("/api/auth/register", status_code=201)
 def register_user(req: UserRegisterRequest, db: Session = Depends(get_db)):
-    """Upsert a user record (called from frontend on signup/login)."""
+    """Register a new user with a hashed password."""
     existing = db.query(models.User).filter(models.User.email == req.email).first()
     if existing:
-        # Update name/role if changed
-        existing.name = req.name
-        existing.role = req.role
-        db.commit()
-        return {"status": "updated", "email": existing.email, "role": existing.role}
-    user = models.User(email=req.email, name=req.name, role=req.role)
+        raise HTTPException(status_code=400, detail="An account with this email already exists.")
+    
+    hashed = hash_password(req.password)
+    user = models.User(
+        email=req.email,
+        name=req.name,
+        password_hash=hashed,
+        role=req.role
+    )
     db.add(user)
     db.commit()
-    return {"status": "created", "email": user.email, "role": user.role}
+    db.refresh(user)
+    return {"status": "created", "email": user.email, "role": user.role, "name": user.name}
+
+@app.post("/api/auth/login")
+def login_user(req: UserLoginRequest, db: Session = Depends(get_db)):
+    """Authenticate a user and return their details."""
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid email or password.")
+    
+    hashed = hash_password(req.password)
+    if user.password_hash != hashed:
+        raise HTTPException(status_code=400, detail="Invalid email or password.")
+        
+    return {
+        "status": "authenticated",
+        "email": user.email,
+        "name": user.name,
+        "role": user.role
+    }
 
 @app.get("/api/auth/user/{email}")
 def get_user(email: str, db: Session = Depends(get_db)):

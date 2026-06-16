@@ -9,6 +9,7 @@ class User(Base):
 
     email      = Column(String, primary_key=True, index=True)
     name       = Column(String, nullable=False)
+    password_hash = Column(String, nullable=False)
     role       = Column(String, default="patient")   # "patient" | "clinician"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

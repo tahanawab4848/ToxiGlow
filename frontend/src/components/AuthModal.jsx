@@ -1,15 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { API_BASE_URL, safeLocalStorage } from '../config';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-const USERS_KEY = 'tg_users';
 const SESSION_KEY = 'tg_session';
-
-function getUsers() {
-  try { return JSON.parse(safeLocalStorage.getItem(USERS_KEY) || '{}'); }
-  catch { return {}; }
-}
-function saveUsers(u) { safeLocalStorage.setItem(USERS_KEY, JSON.stringify(u)); }
 function saveSession(email, name, role = 'patient') {
   safeLocalStorage.setItem(SESSION_KEY, JSON.stringify({ email, name, role, token: `tg_${Date.now()}` }));
 }
@@ -26,42 +19,39 @@ function passwordStrength(pwd) {
 // ── Animated input field ─────────────────────────────────────────────────────
 function InputField({ label, type = 'text', value, onChange, placeholder, required = false, showToggle = false, toggleState, onToggle }) {
   const [focused, setFocused] = useState(false);
-  const [localValue, setLocalValue] = useState(value);
-
-  useEffect(() => { setLocalValue(value); }, [value]);
 
   return (
     <div style={{ position: 'relative', marginBottom: 20 }}>
       <label style={{
         position: 'absolute',
         left: 20,
-        top: focused || localValue ? 10 : '50%',
-        transform: focused || localValue ? 'translateY(0) scale(0.85)' : 'translateY(-50%) scale(1)',
+        top: focused || value ? 10 : '50%',
+        transform: focused || value ? 'translateY(0) scale(0.85)' : 'translateY(-50%) scale(1)',
         color: focused ? '#00d2ff' : 'rgba(255,255,255,0.4)',
-        fontSize: focused || localValue ? '0.7rem' : '0.9rem',
+        fontSize: focused || value ? '0.7rem' : '0.9rem',
         fontWeight: 600,
         letterSpacing: '0.15em',
         textTransform: 'uppercase',
         pointerEvents: 'none',
         transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
         zIndex: 2,
-        background: focused || localValue ? 'hsl(220 25% 6%)' : 'transparent',
-        padding: focused || localValue ? '0 8px' : '0',
+        background: focused || value ? 'hsl(220 25% 6%)' : 'transparent',
+        padding: focused || value ? '0 8px' : '0',
       }}>
         {label}
       </label>
       <div style={{ position: 'relative' }}>
         <input
           type={showToggle ? (toggleState ? 'text' : 'password') : type}
-          value={localValue}
-          onChange={(e) => { setLocalValue(e.target.value); onChange && onChange(e.target.value); }}
+          value={value}
+          onChange={(e) => { onChange && onChange(e.target.value); }}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           required={required}
           placeholder={focused ? '' : placeholder}
           style={{
             width: '100%',
-            padding: focused || localValue ? '28px 48px 12px 20px' : '18px 48px 18px 20px',
+            padding: focused || value ? '28px 48px 12px 20px' : '18px 48px 18px 20px',
             background: 'rgba(255,255,255,0.02)',
             border: `1.5px solid ${focused ? '#00d2ff' : 'rgba(255,255,255,0.08)'}`,
             borderRadius: 16,
@@ -216,30 +206,6 @@ function TabSwitcher({ active, onChange }) {
   );
 }
 
-// ── Toast notification ───────────────────────────────────────────────────────
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  const bg = type === 'error' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(0, 210, 255, 0.12)';
-  const border = type === 'error' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(0, 210, 255, 0.3)';
-  const icon = type === 'error' ? '⚠️' : '✓';
-
-  return (
-    <div style={{
-      position: 'absolute', top: 20, left: 20, right: 20,
-      background, border: `1px solid ${border}`, borderRadius: 12,
-      padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
-      animation: 'fade-slide-down 0.3s ease-out',
-      zIndex: 10,
-    }}>
-      <span style={{ fontSize: '1.1rem' }}>{icon}</span>
-      <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>{message}</span>
-    </div>
-  );
-}
 
 // ── Main Auth Modal ──────────────────────────────────────────────────────────
 export default function AuthModal({ isOpen, onClose, initialTab = 'login', onAuthSuccess }) {
@@ -257,51 +223,52 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onAut
     if (isOpen) {
       setTimeout(() => setMounted(true), 10);
     } else {
-      setMounted(false);
+      setTimeout(() => setMounted(false), 0);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
-    const users = getUsers();
 
     try {
+      if (!email || !email.includes('@') || !email.includes('.')) {
+        setToast({ msg: 'Please enter a valid email address.', type: 'error' });
+        setLoading(false);
+        return;
+      }
+      if (!password || password.length < 6) {
+        setToast({ msg: 'Password must be at least 6 characters.', type: 'error' });
+        setLoading(false);
+        return;
+      }
+
       if (activeTab === 'signup') {
-        if (users[email]) {
-          setToast({ msg: 'An account with this email already exists.', type: 'error' });
-          setLoading(false);
-          return;
-        }
-        if (password.length < 6) {
-          setToast({ msg: 'Password must be at least 6 characters.', type: 'error' });
-          setLoading(false);
-          return;
-        }
-        if (!email.includes('@') || !email.includes('.')) {
-          setToast({ msg: 'Please enter a valid email address.', type: 'error' });
-          setLoading(false);
-          return;
-        }
-
         const name = fullName.trim() || email.split('@')[0];
-        users[email] = { name, hash: btoa(password), role };
-        saveUsers(users);
-        saveSession(email, name, role);
-
+        
         // Sync to DB
-        fetch(`${API_BASE_URL}/api/auth/register`, {
+        const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, name, role }),
-        }).catch(() => {});
+          body: JSON.stringify({ email, password, name, role }),
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            const errorMsg = typeof err.detail === 'string' ? err.detail : (Array.isArray(err.detail) ? err.detail[0].msg : 'Registration failed');
+            throw new Error(errorMsg);
+        }
+        
+        const data = await res.json();
 
-        setToast({ msg: `Welcome to ToxiGlow, ${name}!`, type: 'success' });
+        saveSession(data.email, data.name, data.role);
+
+        setToast({ msg: `Welcome to ToxiGlow, ${data.name}!`, type: 'success' });
         setTimeout(() => {
           onClose();
-          onAuthSuccess && onAuthSuccess(name);
+          onAuthSuccess && onAuthSuccess(data.name);
           // Reset form
           setEmail('');
           setPassword('');
@@ -310,31 +277,32 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onAut
           setMounted(false);
         }, 1500);
       } else {
-        const user = users[email];
-        if (!user || user.hash !== btoa(password)) {
-          setToast({ msg: 'Invalid email or password.', type: 'error' });
-          setLoading(false);
-          return;
+        const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            const errorMsg = typeof err.detail === 'string' ? err.detail : 'Invalid email or password';
+            throw new Error(errorMsg);
         }
+        
+        const data = await res.json();
 
-        let resolvedRole = user.role || 'patient';
-        try {
-          const r = await fetch(`${API_BASE_URL}/api/auth/user/${encodeURIComponent(email)}`);
-          if (r.ok) { const d = await r.json(); resolvedRole = d.role || resolvedRole; }
-        } catch { /* offline */ }
-
-        saveSession(email, user.name, resolvedRole);
-        setToast({ msg: `Welcome back, ${user.name}!`, type: 'success' });
+        saveSession(data.email, data.name, data.role);
+        setToast({ msg: `Welcome back, ${data.name}!`, type: 'success' });
         setTimeout(() => {
           onClose();
-          onAuthSuccess && onAuthSuccess(user.name);
+          onAuthSuccess && onAuthSuccess(data.name);
           setEmail('');
           setPassword('');
           setMounted(false);
         }, 1200);
       }
     } catch (err) {
-      setToast({ msg: 'Something went wrong. Please try again.', type: 'error' });
+      setToast({ msg: err.message || 'Something went wrong. Please try again.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -347,144 +315,200 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onAut
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(0,0,0,0.9)',
-        backdropFilter: 'blur(20px)',
+        background: 'rgba(0,0,0,0.85)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
         opacity: mounted ? 1 : 0,
-        transition: 'opacity 0.3s ease',
+        transition: 'opacity 0.4s ease',
+        padding: '24px',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) { onClose(); setMounted(false); } }}
     >
-      {/* Glow effects */}
+      {/* Background Orbs */}
       <div style={{
-        position: 'absolute', width: 500, height: 500, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0,210,255,0.08) 0%, transparent 70%)',
-        top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        position: 'absolute', width: '60vw', height: '60vw', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(0,210,255,0.05) 0%, transparent 60%)',
+        top: '50%', left: '30%', transform: 'translate(-50%, -50%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute', width: '50vw', height: '50vw', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(0,230,118,0.03) 0%, transparent 60%)',
+        bottom: '-10%', right: '10%', transform: 'translate(50%, 50%)',
         pointerEvents: 'none',
       }} />
 
-      {/* Modal card */}
+      {/* Main Split Card */}
       <div style={{
-        width: '100%', maxWidth: 420,
-        background: 'rgba(20, 22, 30, 0.95)',
+        width: '100%', maxWidth: 880,
+        display: 'flex', flexDirection: 'row',
+        background: 'rgba(20, 22, 30, 0.7)',
         border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 28,
-        padding: 36,
+        borderRadius: 24,
         position: 'relative',
         overflow: 'hidden',
-        transform: mounted ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(20px)',
-        transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-        boxShadow: '0 32px 64px rgba(0,0,0,0.5), 0 0 100px rgba(0,210,255,0.08)',
+        transform: mounted ? 'scale(1) translateY(0)' : 'scale(0.97) translateY(20px)',
+        transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        boxShadow: '0 40px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
       }}>
-        {/* Toast */}
-        {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+        
+        {/* Explicit Close Button */}
+        <button
+          onClick={() => { onClose(); setMounted(false); }}
+          style={{
+            position: 'absolute', top: 20, right: 20, zIndex: 50,
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+            color: 'rgba(255,255,255,0.6)', width: 36, height: 36, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 0.2s', fontSize: '1.2rem',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'white'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+        >
+          ×
+        </button>
 
-        {/* Header with logo */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 56, height: 56, borderRadius: 16,
-            background: 'rgba(0,210,255,0.1)', border: '1px solid rgba(0,210,255,0.2)',
-            marginBottom: 16,
-            fontSize: '1.8rem',
-          }}>
-            🩹
-          </div>
-          <h2 style={{
-            fontFamily: 'var(--font-display)', fontStyle: 'italic',
-            fontSize: '1.8rem', color: 'white', margin: 0, marginBottom: 4,
-          }}>
-            Toxi<span style={{ color: '#00d2ff' }}>Glow</span>
-          </h2>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
-            {activeTab === 'login' ? 'Sign in to access your account' : 'Create your account to get started'}
-          </p>
-        </div>
-
-        {/* Tab switcher */}
-        <TabSwitcher active={activeTab} onChange={setActiveTab} />
-
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          {activeTab === 'signup' && (
-            <>
-              <RoleSelector selected={role} onSelect={setRole} />
-              <InputField
-                label="Full Name"
-                value={fullName}
-                onChange={setFullName}
-                placeholder="John Doe"
-              />
-            </>
-          )}
-
-          <InputField
-            label="Email"
-            type="email"
-            value={email}
-            onChange={setEmail}
-            placeholder="user@example.com"
-          />
-
-          <InputField
-            label="Password"
-            type="password"
-            value={password}
-            onChange={setPassword}
-            placeholder="••••••••"
-            showToggle={true}
-            toggleState={showPassword}
-            onToggle={() => setShowPassword(!showPassword)}
-          />
-
-          {activeTab === 'signup' && <StrengthMeter score={pwdScore} />}
-
-          {/* Submit button */}
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '16px',
-              borderRadius: 16,
-              border: 'none',
-              background: loading
-                ? 'rgba(255,255,255,0.1)'
-                : 'linear-gradient(135deg, #00d2ff 0%, #0094b3 100%)',
-              color: loading ? 'rgba(255,255,255,0.4)' : 'black',
-              fontSize: '0.95rem',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              marginTop: 8,
-              boxShadow: loading ? 'none' : '0 8px 32px rgba(0,210,255,0.35)',
-              transition: 'all 0.25s ease',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            <span style={{ position: 'relative', zIndex: 1 }}>
-              {loading ? (
-                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  <span style={{ animation: 'pulse-dot 1s infinite' }}>●</span>
-                  <span style={{ animation: 'pulse-dot 1s infinite 0.2s' }}>●</span>
-                  <span style={{ animation: 'pulse-dot 1s infinite 0.4s' }}>●</span>
-                </span>
-              ) : (activeTab === 'login' ? 'Sign In' : 'Create Account')}
-            </span>
-          </button>
-        </form>
-
-        {/* Footer */}
+        {/* Left Side: Branding / Illustration (Hidden on very small screens) */}
         <div style={{
-          marginTop: 28, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.06)',
-          textAlign: 'center',
+          flex: '1', display: window.innerWidth > 768 ? 'flex' : 'none',
+          flexDirection: 'column', justifyContent: 'space-between',
+          padding: 40, background: 'rgba(0, 0, 0, 0.4)',
+          borderRight: '1px solid rgba(255,255,255,0.04)',
+          position: 'relative', overflow: 'hidden',
         }}>
-          <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', margin: 0, lineHeight: 1.5 }}>
-            By continuing, you agree to our Terms of Service and Privacy Policy.
-            <br />
-            <span style={{ opacity: 0.6 }}>All data is encrypted and stored securely.</span>
-          </p>
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 48, height: 48, borderRadius: 12,
+              background: 'linear-gradient(135deg, rgba(0,210,255,0.2), rgba(0,210,255,0.05))',
+              border: '1px solid rgba(0,210,255,0.3)',
+              marginBottom: 24, fontSize: '1.5rem',
+            }}>
+              ➕
+            </div>
+            <h2 style={{
+              fontFamily: 'var(--font-display)', fontStyle: 'italic',
+              fontSize: '2.4rem', color: 'white', margin: '0 0 16px', lineHeight: 1.1
+            }}>
+              Welcome to <br/><span style={{ color: '#00d2ff' }}>PathoGlow</span>
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: 300 }}>
+              Join the cutting-edge clinical compassion platform. Track wound healing with AI, publish clinical insights, and manage patient care.
+            </p>
+          </div>
+
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', opacity: 0.8 }}>
+              <div style={{ display: 'flex' }}>
+                {['#00d2ff', '#00e676', '#7c4dff'].map((color, i) => (
+                  <div key={i} style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: `linear-gradient(135deg, ${color}, transparent)`,
+                    border: `1px solid ${color}`,
+                    marginLeft: i > 0 ? -12 : 0, boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                  }} />
+                ))}
+              </div>
+              <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Trusted by 10k+ Clinicians</span>
+            </div>
+          </div>
+
+          {/* Decorative graphic */}
+          <div style={{
+            position: 'absolute', bottom: -50, right: -50, width: 300, height: 300,
+            background: 'radial-gradient(circle, rgba(0,210,255,0.15) 0%, transparent 70%)',
+            border: '1px solid rgba(0,210,255,0.1)', borderRadius: '50%',
+            pointerEvents: 'none'
+          }} />
         </div>
+
+        {/* Right Side: Form */}
+        <div style={{ flex: '1', padding: '40px', position: 'relative' }}>
+
+          <div style={{ maxWidth: 360, margin: '0 auto' }}>
+            {toast && (
+              <div style={{
+                background: toast.type === 'error' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(0, 210, 255, 0.15)',
+                border: `1px solid ${toast.type === 'error' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(0, 210, 255, 0.4)'}`,
+                borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
+                marginBottom: 20,
+              }}>
+                <span style={{ fontSize: '1.2rem' }}>{toast.type === 'error' ? '⚠️' : '✓'}</span>
+                <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600, color: 'white' }}>{toast.msg}</span>
+              </div>
+            )}
+
+            <TabSwitcher active={activeTab} onChange={setActiveTab} />
+
+            <form onSubmit={handleSubmit}>
+              {activeTab === 'signup' && (
+                <div style={{ animation: 'fade-slide-up 0.3s ease-out forwards' }}>
+                  <RoleSelector selected={role} onSelect={setRole} />
+                  <InputField
+                    label="Full Name"
+                    value={fullName}
+                    onChange={setFullName}
+                    placeholder="e.g. Dr. Jane Smith"
+                  />
+                </div>
+              )}
+
+              <InputField
+                label="Email Address"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="user@example.com"
+              />
+
+              <InputField
+                label="Password"
+                type="password"
+                value={password}
+                onChange={setPassword}
+                placeholder="••••••••"
+                showToggle={true}
+                toggleState={showPassword}
+                onToggle={() => setShowPassword(!showPassword)}
+              />
+
+              {activeTab === 'signup' && <StrengthMeter score={pwdScore} />}
+
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                style={{
+                  width: '100%', padding: '16px', borderRadius: 16, border: 'none',
+                  background: loading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #00d2ff 0%, #0094b3 100%)',
+                  color: loading ? 'rgba(255,255,255,0.4)' : 'black',
+                  fontSize: '0.95rem', fontWeight: 700, letterSpacing: '0.05em',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  marginTop: 12, boxShadow: loading ? 'none' : '0 8px 32px rgba(0,210,255,0.35)',
+                  transition: 'all 0.25s ease', position: 'relative', overflow: 'hidden',
+                }}
+                onMouseEnter={e => !loading && (e.currentTarget.style.transform = 'translateY(-2px)')}
+                onMouseLeave={e => !loading && (e.currentTarget.style.transform = 'translateY(0)')}
+              >
+                {loading ? (
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <span style={{ animation: 'pulse-dot 1s infinite' }}>●</span>
+                    <span style={{ animation: 'pulse-dot 1s infinite 0.2s' }}>●</span>
+                    <span style={{ animation: 'pulse-dot 1s infinite 0.4s' }}>●</span>
+                  </span>
+                ) : (activeTab === 'login' ? 'Sign In to Dashboard' : 'Create Secure Account')}
+              </button>
+            </form>
+
+            <div style={{ marginTop: 32, textAlign: 'center' }}>
+              <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', margin: 0, lineHeight: 1.6 }}>
+                By continuing, you agree to our Terms of Service and Privacy Policy.
+                <br />All data is securely encrypted.
+              </p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

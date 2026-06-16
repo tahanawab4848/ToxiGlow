@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import SeverityGauge from './SeverityGauge';
 import TissueChart from './TissueChart';
 import { API_BASE_URL } from '../config';
 
-export default function ResultsDashboard({ results, rawImageSrc, comparison, onNewAssessment }) {
+export default function ResultsDashboard({ results, rawImageSrc, comparison, onNewAssessment, user }) {
   const [sliderVal, setSliderVal] = useState(50);
   const [explainMode, setExplainMode] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -132,13 +132,11 @@ export default function ResultsDashboard({ results, rawImageSrc, comparison, onN
   };
 
   const recommendation = getRecommendation();
-  const isWoundDetected = results.area > 0 || results.tissues.Granulation > 0;
 
   // ── Healing history (real localStorage) ─────────────────────────────────────
   const [healHistory, setHealHistory] = useState([]);
 
   useEffect(() => {
-    const HIST_KEY = 'tg_history';
     const today = new Date().toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
     const dotColor = results.severity_score <= 30 ? '#4caf50'
       : results.severity_score <= 60 ? '#ffc107'
@@ -148,21 +146,53 @@ export default function ResultsDashboard({ results, rawImageSrc, comparison, onN
       : results.severity_score <= 60 ? 'Stable'
       : results.severity_score <= 80 ? 'Worsening'
       : 'Critical';
-
-    let hist = [];
-    try { hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch { hist = []; }
-
-    // Update today's entry (replace if same date)
-    const existingIdx = hist.findIndex(h => h.day === today);
     const entry = { day: today, dot: dotColor, label };
-    if (existingIdx >= 0) hist[existingIdx] = entry;
-    else hist.push(entry);
 
-    // Keep last 8 entries
-    if (hist.length > 8) hist = hist.slice(-8);
-    localStorage.setItem(HIST_KEY, JSON.stringify(hist));
-    setHealHistory(hist);
-  }, [results]);
+    if (user?.email) {
+      // Fetch history from DB
+      fetch(`${API_BASE_URL}/api/assessments/history?email=${encodeURIComponent(user.email)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (!Array.isArray(data)) return;
+          const hist = data.reverse().map(record => {
+            const date = new Date(record.created_at);
+            const dDay = `${date.getMonth() + 1}/${date.getDate()}`;
+            const dDot = record.severity_score <= 30 ? '#4caf50'
+              : record.severity_score <= 60 ? '#ffc107'
+              : record.severity_score <= 80 ? '#ff9800'
+              : '#f44336';
+            const dLabel = record.severity_score <= 30 ? 'Improving'
+              : record.severity_score <= 60 ? 'Stable'
+              : record.severity_score <= 80 ? 'Worsening'
+              : 'Critical';
+            return { day: dDay, dot: dDot, label: dLabel };
+          });
+          
+          const existingIdx = hist.findIndex(h => h.day === today);
+          if (existingIdx >= 0) hist[existingIdx] = entry;
+          else hist.push(entry);
+
+          const finalHist = hist.length > 8 ? hist.slice(-8) : hist;
+          setTimeout(() => setHealHistory(finalHist), 0);
+        })
+        .catch(() => {
+          setTimeout(() => setHealHistory([entry]), 0);
+        });
+    } else {
+      // Fallback to local storage for guests
+      const HIST_KEY = 'tg_history';
+      let hist;
+      try { hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch { hist = []; }
+
+      const existingIdx = hist.findIndex(h => h.day === today);
+      if (existingIdx >= 0) hist[existingIdx] = entry;
+      else hist.push(entry);
+
+      const finalHist = hist.length > 8 ? hist.slice(-8) : hist;
+      localStorage.setItem(HIST_KEY, JSON.stringify(finalHist));
+      setTimeout(() => setHealHistory(finalHist), 0);
+    }
+  }, [results, user]);
 
   // Mark the last entry as "Current"
   const displayHistory = healHistory.map((h, i) =>

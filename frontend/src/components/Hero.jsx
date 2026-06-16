@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 
 // Custom lightweight SVG Icons to ensure zero compile warnings
 const GlobeIcon = ({ size = 20, className }) => (
@@ -122,13 +122,29 @@ export default function Hero({ onAuthClick }) {
   return (
     <section className="relative min-h-screen bg-black overflow-hidden flex flex-col" id="hero">
       
-      {/* 1. Looping background video */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
+      {/* 1. Dynamic Backgrounds & Looping Video */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        
+        {/* Animated Mesh / Orbs */}
+        <div className="absolute inset-0 animate-shimmer" style={{ opacity: 0.1, zIndex: -2 }}></div>
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full animate-float" style={{
+          background: `radial-gradient(circle, ${accentColor}25 0%, transparent 70%)`,
+          filter: 'blur(60px)',
+          animationDuration: '12s'
+        }}></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] rounded-full animate-breathe" style={{
+          background: `radial-gradient(circle, #7c4dff15 0%, transparent 60%)`,
+          filter: 'blur(80px)',
+          animationDuration: '15s',
+          animationDelay: '2s'
+        }}></div>
+
         <video
           ref={videoRef}
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4"
           muted
           autoPlay
+          loop
           playsInline
           style={{
             position: 'absolute',
@@ -139,14 +155,29 @@ export default function Hero({ onAuthClick }) {
             objectFit: 'cover',
             transform: 'translateY(17%)', // cropped top portion
             opacity: opacity,
+            mixBlendMode: 'screen'
           }}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleEnded}
           onLoadedData={handleLoadedData}
         />
-        {/* Glow overlay */}
+        
+        {/* Cinematic Overlays */}
         <div className="hero-glow"></div>
-        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/90"></div>
+        
+        {/* Particle dust */}
+        {[...Array(15)].map((_, i) => (
+          <div key={i} className="absolute rounded-full bg-white" style={{
+            width: Math.random() * 3 + 1 + 'px',
+            height: Math.random() * 3 + 1 + 'px',
+            top: Math.random() * 100 + '%',
+            left: Math.random() * 100 + '%',
+            opacity: Math.random() * 0.5 + 0.1,
+            animation: `float ${Math.random() * 5 + 5}s linear infinite`,
+            animationDelay: `${Math.random() * 5}s`
+          }} />
+        ))}
       </div>
 
       {/* 2. Medical HUD Visual Additions */}
@@ -177,7 +208,7 @@ export default function Hero({ onAuthClick }) {
       </svg>
 
       {/* 3. Navigation bar (relative z-20) */}
-      <header className="relative z-20 px-6 py-6" style={{ paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingTop: '1.5rem', paddingBottom: '1.5rem' }}>
+      <header className="relative z-20 px-6 py-6 animate-fade-slide-down" style={{ opacity: 0, paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingTop: '1.5rem', paddingBottom: '1.5rem' }}>
         <div className="liquid-glass rounded-full px-6 py-3 flex items-center justify-between max-w-5xl mx-auto" style={{ paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingTop: '0.75rem', paddingBottom: '0.75rem' }}>
           
           <div className="flex items-center gap-2" style={{ gap: '0.5rem' }}>
@@ -217,7 +248,7 @@ export default function Hero({ onAuthClick }) {
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12 text-center" style={{ transform: 'translateY(-5%)', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingTop: '3rem', paddingBottom: '3rem' }}>
         
         {/* Dynamic Patient/Clinician workspace selector */}
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div className="animate-fade-slide-down stagger-1" style={{ marginBottom: '1.5rem', opacity: 0 }}>
           <div className="mode-toggle-pill">
             <button 
               type="button"
@@ -236,22 +267,44 @@ export default function Hero({ onAuthClick }) {
           </div>
         </div>
 
-        <h1 
-          className="text-5xl md:text-6xl lg:text-7xl text-white mb-8 tracking-tight whitespace-nowrap"
-          style={{ 
-            fontFamily: "'Instrument Serif', serif", 
-            fontStyle: 'italic',
-            marginBottom: '1.5rem',
-            letterSpacing: '-0.025em'
-          }}
-        >
-          The early warning your wound needs.
-        </h1>
+        <div className="relative animate-fade-slide-up stagger-2" style={{ opacity: 0, marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          {/* Intense focal glow behind text */}
+          <div className="absolute animate-breathe" style={{
+            width: '140%',
+            height: '250%',
+            background: `radial-gradient(ellipse at center, ${accentColor}25 0%, transparent 60%)`,
+            filter: 'blur(32px)',
+            zIndex: -1,
+            pointerEvents: 'none',
+          }}></div>
+          {/* Secondary subtle sharp glow */}
+          <div className="absolute animate-pulse" style={{
+            width: '80%',
+            height: '100%',
+            background: `radial-gradient(ellipse at center, ${accentColor}40 0%, transparent 80%)`,
+            filter: 'blur(16px)',
+            zIndex: -1,
+            pointerEvents: 'none',
+            animationDuration: '3s',
+          }}></div>
+          
+          <h1 
+            className="text-5xl md:text-6xl lg:text-7xl text-white tracking-tight whitespace-nowrap"
+            style={{ 
+              fontFamily: "'Instrument Serif', serif", 
+              fontStyle: 'italic',
+              letterSpacing: '-0.025em',
+              textShadow: `0 0 20px rgba(0,0,0,0.9), 0 0 40px ${accentColor}60`,
+            }}
+          >
+            The early warning your wound needs.
+          </h1>
+        </div>
 
         <div className="max-w-xl w-full space-y-4 mx-auto" style={{ maxWidth: '36rem' }}>
           
           {/* Email input bar with dynamically updated state colors */}
-          <form onSubmit={handleSubscribe} className="liquid-glass rounded-full pl-6 pr-2 py-2 flex items-center gap-3" style={{ paddingLeft: '1.5rem', paddingRight: '0.5rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', gap: '0.75rem', transition: 'border-color 0.4s ease' }}>
+          <form onSubmit={handleSubscribe} className="liquid-glass rounded-full pl-6 pr-2 py-2 flex items-center gap-3 animate-fade-slide-up stagger-3" style={{ opacity: 0, paddingLeft: '1.5rem', paddingRight: '0.5rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', gap: '0.75rem', transition: 'border-color 0.4s ease' }}>
             <input
               type="email"
               placeholder={rolePlaceholder}
@@ -292,12 +345,12 @@ export default function Hero({ onAuthClick }) {
           )}
 
           {/* Subtitle text */}
-          <p className="text-white text-sm leading-relaxed px-4" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', lineHeight: '1.625', paddingLeft: '1rem', paddingRight: '1rem' }}>
+          <p className="text-white text-sm leading-relaxed px-4 animate-fade-slide-up stagger-4" style={{ opacity: 0, color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', lineHeight: '1.625', paddingLeft: '1rem', paddingRight: '1rem' }}>
             Stay updated with clinical telemetry assessments. Subscribe to our newsletter today and never miss out on critical early warning updates.
           </p>
 
           {/* Manifesto button */}
-          <div style={{ paddingTop: '1.5rem' }}>
+          <div className="animate-fade-slide-up stagger-4" style={{ opacity: 0, paddingTop: '1.5rem' }}>
             <a 
               href="#assess" 
               className="liquid-glass rounded-full px-8 py-3 text-white text-sm font-medium hover:bg-white/5 transition-colors"

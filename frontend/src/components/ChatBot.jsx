@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { API_BASE_URL, hasSpeechSynthesis } from '../config';
+import { useState, useRef, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 
 // ── Suggestion chips shown in the empty state ────────────────────────────────
 const SUGGESTIONS = [
@@ -15,8 +15,6 @@ const SUGGESTIONS = [
 function renderMarkdown(text) {
   const parts = [];
   let remaining = text;
-  let key = 0;
-
   while (remaining.length > 0) {
     const boldIdx = remaining.indexOf('**');
     const breakIdx = remaining.indexOf('\n');
@@ -27,23 +25,23 @@ function renderMarkdown(text) {
     );
 
     if (nextSpecial === Infinity) {
-      parts.push(<span key={key++}>{remaining}</span>);
+      parts.push(<span key={parts.length}>{remaining}</span>);
       break;
     }
 
     if (nextSpecial === breakIdx && (boldIdx === -1 || breakIdx < boldIdx)) {
-      if (breakIdx > 0) parts.push(<span key={key++}>{remaining.slice(0, breakIdx)}</span>);
-      parts.push(<br key={key++} />);
+      if (breakIdx > 0) parts.push(<span key={parts.length}>{remaining.slice(0, breakIdx)}</span>);
+      parts.push(<br key={parts.length} />);
       remaining = remaining.slice(breakIdx + 1);
     } else {
-      if (boldIdx > 0) parts.push(<span key={key++}>{remaining.slice(0, boldIdx)}</span>);
+      if (boldIdx > 0) parts.push(<span key={parts.length}>{remaining.slice(0, boldIdx)}</span>);
       remaining = remaining.slice(boldIdx + 2);
       const closeIdx = remaining.indexOf('**');
       if (closeIdx === -1) {
-        parts.push(<strong key={key++}>{remaining}</strong>);
+        parts.push(<strong key={parts.length}>{remaining}</strong>);
         break;
       }
-      parts.push(<strong key={key++}>{remaining.slice(0, closeIdx)}</strong>);
+      parts.push(<strong key={parts.length}>{remaining.slice(0, closeIdx)}</strong>);
       remaining = remaining.slice(closeIdx + 2);
     }
   }
@@ -91,7 +89,7 @@ export default function ChatBot({ assessmentContext }) {
   useEffect(() => {
     if (open) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      setUnread(0);
+      setTimeout(() => setUnread(0), 0);
     }
   }, [messages, open]);
 

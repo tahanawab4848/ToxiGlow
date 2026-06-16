@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 
 const CATEGORIES = [
@@ -185,7 +185,7 @@ export default function KnowledgeHub({ onBack }) {
   const [openArticle, setOpenArticle] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
+    setTimeout(() => setLoading(true), 0);
     const url = category !== 'all'
       ? `${API_BASE_URL}/api/articles?category=${category}`
       : `${API_BASE_URL}/api/articles`;

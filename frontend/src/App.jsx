@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import WoundScanner from './components/WoundScanner';
 import ResultsDashboard from './components/ResultsDashboard';
@@ -47,14 +47,14 @@ function AnimatedCounter({ target, suffix = '', duration = 1800 }) {
 
 // ── Floating particles background ────────────────────────────────────────────
 function ParticleField() {
-  const particles = Array.from({ length: 22 }, (_, i) => ({
+  const [particles] = useState(() => Array.from({ length: 22 }, (_, i) => ({
     id: i,
     size: Math.random() * 3 + 1,
     x: Math.random() * 100,
     delay: Math.random() * 8,
     duration: Math.random() * 12 + 10,
     opacity: Math.random() * 0.4 + 0.1,
-  }));
+  })));
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
       {particles.map(p => (
@@ -79,7 +79,6 @@ function ParticleField() {
 
 // ── Typing animation ──────────────────────────────────────────────────────────
 function TypingText({ words, speed = 80, pause = 2000 }) {
-  const [displayed, setDisplayed] = useState('');
   const [wordIdx, setWordIdx] = useState(0);
   const [charIdx, setCharIdx] = useState(0);
   const [deleting, setDeleting] = useState(false);
@@ -94,12 +93,15 @@ function TypingText({ words, speed = 80, pause = 2000 }) {
     } else if (deleting && charIdx > 0) {
       timer = setTimeout(() => setCharIdx(c => c - 1), speed / 2);
     } else if (deleting && charIdx === 0) {
-      setDeleting(false);
-      setWordIdx(i => (i + 1) % words.length);
+      timer = setTimeout(() => {
+        setDeleting(false);
+        setWordIdx(i => (i + 1) % words.length);
+      }, speed / 2);
     }
-    setDisplayed(word.slice(0, charIdx));
     return () => clearTimeout(timer);
   }, [charIdx, deleting, wordIdx, words, speed, pause]);
+
+  const displayed = words[wordIdx].slice(0, charIdx);
 
   return (
     <span>
@@ -255,14 +257,31 @@ function Hero({ onAuthClick }) {
           transform: mounted ? 'translateY(0)' : 'translateY(16px)',
           transition: 'opacity 0.8s ease 0.55s, transform 0.8s ease 0.55s',
         }}>
-          <a href="#assess" className="btn-cta" style={{ position: 'relative', overflow: 'hidden' }}>
+          <button className="btn-cta" style={{ 
+            position: 'relative', overflow: 'hidden',
+            border: 'none', cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            padding: '16px 36px', borderRadius: 999,
+            background: 'white', color: 'black',
+            fontWeight: 600, fontSize: '0.95rem',
+            boxShadow: '0 8px 24px rgba(255, 255, 255, 0.15)',
+            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease',
+          }}
+          onClick={() => {
+            if (typeof document !== 'undefined') {
+              const assessEl = document.getElementById('assess');
+              if (assessEl) {
+                assessEl.scrollIntoView({ behavior: 'smooth' });
+              }
+            }
+          }}>
             <span style={{ position: 'relative', zIndex: 1 }}>Start Assessment</span>
-            <span style={{ position: 'relative', zIndex: 1, marginLeft: 6 }}>→</span>
+            <span style={{ position: 'relative', zIndex: 1, marginLeft: 6, transition: 'transform 0.2s ease' }}>→</span>
             <div style={{
               position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,210,255,0.15) 0%, transparent 60%)',
               opacity: 0, transition: 'opacity 0.3s',
             }} className="btn-cta-shine" />
-          </a>
+          </button>
           <button
             onClick={() => onAuthClick('signup')}
             style={{
@@ -369,7 +388,6 @@ export default function App() {
   };
 
   const [timeoutActive, setTimeoutActive] = useState(false);
-  const [timerId, setTimerId] = useState(null);
   const [activeStage, setActiveStage] = useState(0);
   const stages = [
     { pending: 'Detecting wound boundaries...', completed: '✓ Wound mapped' },
@@ -380,11 +398,9 @@ export default function App() {
 
   useEffect(() => {
     let interval;
+    let localTimerId;
     if (phase === 'processing') {
-      setActiveStage(0);
-      setTimeoutActive(false);
-      const tId = setTimeout(() => setTimeoutActive(true), 30000);
-      setTimerId(tId);
+      localTimerId = setTimeout(() => setTimeoutActive(true), 30000);
       interval = setInterval(() => {
         setActiveStage(prev => {
           if (prev < stages.length - 1) return prev + 1;
@@ -392,14 +408,12 @@ export default function App() {
           return prev;
         });
       }, 700);
-    } else {
-      if (timerId) clearTimeout(timerId);
     }
     return () => {
       clearInterval(interval);
-      if (timerId) clearTimeout(timerId);
+      if (localTimerId) clearTimeout(localTimerId);
     };
-  }, [phase]);
+  }, [phase, stages.length]);
 
   const handleImageSelected = (file) => {
     setSelectedFile(file);
@@ -416,6 +430,8 @@ export default function App() {
   };
 
   const handleDemoTrigger = async () => {
+    setActiveStage(0);
+    setTimeoutActive(false);
     setPhase('processing');
     setError('');
     try {
@@ -456,6 +472,8 @@ export default function App() {
 
   const triggerAnalysis = async () => {
     if (!selectedFile) return;
+    setActiveStage(0);
+    setTimeoutActive(false);
     setPhase('processing');
     setError('');
     const formData = new FormData();

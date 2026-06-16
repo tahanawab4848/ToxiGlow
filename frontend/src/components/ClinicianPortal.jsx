@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '../config';
 
 const CATEGORIES = [
@@ -110,7 +110,6 @@ export default function ClinicianPortal({ user, onBack }) {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [preview, setPreview] = useState(false);
-  const [selectedArticle, setSelectedArticle] = useState(null);
   const contentRef = useRef(null);
 
   const showToast = (msg, type = 'success') => {
@@ -118,21 +117,21 @@ export default function ClinicianPortal({ user, onBack }) {
     setTimeout(() => setToast(null), 3000);
   };
 
-  useEffect(() => {
-    if (!user?.email) return;
-    fetchArticles();
-  }, [user]);
-
   const fetchArticles = () => {
-    setLoading(true);
+    setTimeout(() => setLoading(true), 0);
     fetch(`${API_BASE_URL}/api/articles?author_email=${encodeURIComponent(user.email)}&include_drafts=true`)
       .then(r => r.json())
       .then(data => { setArticles(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => { setLoading(false); });
   };
 
+  useEffect(() => {
+    if (!user?.email) return;
+    fetchArticles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email]);
+
   const handleSelect = (article) => {
-    setSelectedArticle(article);
     setEditingId(article.id);
     setForm({
       title: article.title,
@@ -147,7 +146,6 @@ export default function ClinicianPortal({ user, onBack }) {
   const handleNew = () => {
     setForm(EMPTY_FORM);
     setEditingId(null);
-    setSelectedArticle(null);
     setPreview(false);
   };
 

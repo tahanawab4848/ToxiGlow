@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Navbar({ user, onLogout, onAuthClick, onViewChange, currentView }) {
   const [scrolled, setScrolled] = useState(false);
@@ -57,18 +57,19 @@ export default function Navbar({ user, onLogout, onAuthClick, onViewChange, curr
         <div className="tg-navbar-links">
           <a href="#assess" className={activeSection === 'assess' ? 'active' : ''}>Assess</a>
           <a href="#how-it-works" className={activeSection === 'how-it-works' ? 'active' : ''}>How It Works</a>
-          <button
-            onClick={() => onViewChange && onViewChange('knowledge-hub')}
-            style={{
-              background: currentView === 'knowledge-hub' ? 'rgba(0,210,255,0.08)' : 'none',
-              border: currentView === 'knowledge-hub' ? '1px solid rgba(0,210,255,0.2)' : 'none',
-              color: currentView === 'knowledge-hub' ? '#00d2ff' : 'hsl(var(--text-secondary))',
-              borderRadius: 999, padding: currentView === 'knowledge-hub' ? '4px 12px' : '0',
-              fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s'
-            }}
+          <a href="#how-it-works" style={{
+              background: 'none',
+              border: 'none',
+              color: 'hsl(var(--text-secondary))',
+              borderRadius: 999, padding: '0',
+              fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s',
+              textDecoration: 'none'
+          }}
+            onMouseEnter={e => e.target.style.color = 'hsl(var(--text))'}
+            onMouseLeave={e => e.target.style.color = 'hsl(var(--text-secondary))'}
           >
-            Knowledge Hub
-          </button>
+            Guides
+          </a>
         </div>
 
         {/* Auth + role-based nav area */}

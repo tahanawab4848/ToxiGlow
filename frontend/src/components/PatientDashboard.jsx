@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 
 const SEVERITY_COLOR = (s) =>
@@ -209,7 +209,7 @@ export default function PatientDashboard({ user, onBack }) {
 
   useEffect(() => {
     if (!user?.email) return;
-    setLoading(true);
+    setTimeout(() => setLoading(true), 0);
     fetch(`${API_BASE_URL}/api/assessments/history?email=${encodeURIComponent(user.email)}`)
       .then(r => r.json())
       .then(data => { setHistory(data); setLoading(false); })
