@@ -14,11 +14,11 @@ from datetime import datetime
 import os
 import hashlib
 from dotenv import load_dotenv
-import openai
+from openai import OpenAI
 
 # Load environment variables
 load_dotenv()
-openai.api_key = os.getenv("AI_API_KEY", "")
+ai_client = OpenAI(api_key=os.getenv("AI_API_KEY", ""))
 
 # Database imports
 from sqlalchemy.orm import Session
@@ -238,7 +238,7 @@ IMPORTANT SAFETY RULES:
 {context_str}
 """
         
-        response = openai.ChatCompletion.create(
+        response = ai_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -347,9 +347,9 @@ def process_and_analyze_image(img_rgb: np.ndarray) -> dict:
     }
 
 @app.post("/api/analyze")
-async def analyze_upload(file: UploadFile = File(...)):
+def analyze_upload(file: UploadFile = File(...)):
     try:
-        contents = await file.read()
+        contents = file.file.read()
         image = Image.open(io.BytesIO(contents)).convert("RGB")
         img_np = np.array(image)
         return process_and_analyze_image(img_np)
@@ -432,8 +432,27 @@ if __name__ == "__main__":
 # ============================================================================ #
 
 # ── Auth: register / get user ─────────────────────────────────────────────────
+import binascii
+
 def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+    # Use pbkdf2_hmac for secure password hashing with a random salt
+    salt = os.urandom(16)
+    pwdhash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+    return binascii.hexlify(salt + pwdhash).decode('ascii')
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    try:
+        # Backward compatibility for old unsalted sha256 hashes (length 64)
+        if len(stored_hash) == 64:
+            return hashlib.sha256(password.encode('utf-8')).hexdigest() == stored_hash
+        
+        # New pbkdf2_hmac validation
+        decoded = binascii.unhexlify(stored_hash)
+        salt, stored_pwdhash = decoded[:16], decoded[16:]
+        pwdhash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+        return pwdhash == stored_pwdhash
+    except Exception:
+        return False
 
 @app.post("/api/auth/register", status_code=201)
 def register_user(req: UserRegisterRequest, db: Session = Depends(get_db)):
@@ -449,10 +468,14 @@ def register_user(req: UserRegisterRequest, db: Session = Depends(get_db)):
         password_hash=hashed,
         role=req.role
     )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return {"status": "created", "email": user.email, "role": user.role, "name": user.name}
+    try:
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return {"status": "created", "email": user.email, "role": user.role, "name": user.name}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.post("/api/auth/login")
 def login_user(req: UserLoginRequest, db: Session = Depends(get_db)):
@@ -461,8 +484,7 @@ def login_user(req: UserLoginRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=400, detail="Invalid email or password.")
     
-    hashed = hash_password(req.password)
-    if user.password_hash != hashed:
+    if not verify_password(req.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid email or password.")
         
     return {
@@ -498,10 +520,14 @@ def save_assessment(req: AssessmentSaveRequest, db: Session = Depends(get_db)):
         risk_level     = req.risk_level,
         annotated_image= req.annotated_image,
     )
-    db.add(record)
-    db.commit()
-    db.refresh(record)
-    return {"status": "saved", "id": record.id}
+    try:
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+        return {"status": "saved", "id": record.id}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.get("/api/assessments/history")
 def get_history(email: str, db: Session = Depends(get_db)):
@@ -606,10 +632,14 @@ def create_article(req: ArticleCreateRequest, db: Session = Depends(get_db)):
         tags         = req.tags,
         published    = req.published,
     )
-    db.add(article)
-    db.commit()
-    db.refresh(article)
-    return {"status": "created", "id": article.id}
+    try:
+        db.add(article)
+        db.commit()
+        db.refresh(article)
+        return {"status": "created", "id": article.id}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.put("/api/articles/{article_id}")
 def update_article(article_id: int, req: ArticleUpdateRequest, author_email: str, db: Session = Depends(get_db)):
