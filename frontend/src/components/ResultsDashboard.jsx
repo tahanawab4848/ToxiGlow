@@ -43,6 +43,19 @@ export default function ResultsDashboard({ results, rawImageSrc, comparison, onN
   const [explainMode, setExplainMode] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [compareOpen, setCompareOpen] = useState(true);
+  const [loupeActive, setLoupeActive] = useState(false);
+  const [loupe, setLoupe] = useState({ show: false, x: 0, y: 0, bgX: 0, bgY: 0 });
+
+  const handleLoupeMove = (e) => {
+    if (!loupeActive) return;
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - left;
+    const y = e.clientY - top;
+    // Calculate background position percentage (0 to 100%)
+    const bgX = (x / width) * 100;
+    const bgY = (y / height) * 100;
+    setLoupe({ show: true, x, y, bgX, bgY });
+  };
 
   const handleEmailDoctor = () => {
     const subject = encodeURIComponent("Wound Assessment Report for Review");
@@ -296,9 +309,23 @@ Thank you.`);
         <div className="tg-glass-card" style={{ padding: 0, overflow: 'hidden', position: 'relative', marginBottom: '32px' }}>
           
           <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid hsl(var(--stroke))' }}>
-            <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))', fontWeight: 600 }}>
-              ⬅️ Drag image to swipe between Raw Photo and Annotated Map ➡️
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))', fontWeight: 600 }}>
+                ⬅️ Drag image to swipe between Raw Photo and Annotated Map ➡️
+              </span>
+              <button 
+                onClick={() => setLoupeActive(!loupeActive)}
+                style={{
+                  fontSize: '0.7rem', padding: '4px 10px', borderRadius: '4px',
+                  background: loupeActive ? '#00d2ff20' : 'rgba(255,255,255,0.05)',
+                  color: loupeActive ? '#00d2ff' : 'white',
+                  border: `1px solid ${loupeActive ? '#00d2ff50' : 'rgba(255,255,255,0.1)'}`,
+                  cursor: 'pointer', transition: 'all 0.2s'
+                }}
+              >
+                🔍 {loupeActive ? 'Magnifier: ON' : 'Magnifier: OFF'}
+              </button>
+            </div>
             <div style={{ display: 'flex', gap: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
               <span style={{ color: 'rgba(255,255,255,0.5)' }}>Raw</span>
               <span style={{ color: '#00d2ff' }}>Annotated ({sliderVal}%)</span>
@@ -313,8 +340,11 @@ Thank you.`);
               maxHeight: '500px', 
               aspectRatio: '4/3', 
               background: 'rgba(0,0,0,0.5)',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              cursor: loupeActive ? 'none' : 'default'
             }}
+            onMouseMove={handleLoupeMove}
+            onMouseLeave={() => setLoupe({ ...loupe, show: false })}
           >
             {/* Base layer (Raw Image) */}
             <img 
@@ -322,6 +352,37 @@ Thank you.`);
               alt="Raw Wound" 
               style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
             />
+
+            {/* Loupe Overlay */}
+            {loupeActive && loupe.show && (
+              <div style={{
+                position: 'absolute',
+                left: loupe.x - 75,
+                top: loupe.y - 75,
+                width: '150px',
+                height: '150px',
+                borderRadius: '50%',
+                border: '3px solid #00d2ff',
+                boxShadow: '0 0 15px rgba(0,0,0,0.8), inset 0 0 15px rgba(0,0,0,0.8)',
+                pointerEvents: 'none',
+                zIndex: 40,
+                backgroundImage: `url(${rawImageSrc})`,
+                backgroundPosition: `${loupe.bgX}% ${loupe.bgY}%`,
+                backgroundSize: '200%', // 2x magnification
+                backgroundRepeat: 'no-repeat',
+                backgroundColor: '#111'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '50%', left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '6px', height: '6px',
+                  backgroundColor: 'rgba(0, 210, 255, 0.5)',
+                  borderRadius: '50%',
+                  pointerEvents: 'none'
+                }}/>
+              </div>
+            )}
 
             {/* Wipe layer (Annotated Image) */}
             <img 

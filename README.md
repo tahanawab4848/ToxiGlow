@@ -28,6 +28,7 @@ Built for **BioNova Innovathon 2026**.
 - 📊 Severity score (0–100) with animated gauge
 - 📥 Downloadable PDF assessment report
 - 📧 "Email to my Doctor" fast-share integration
+- 🔍 Clinical Image Loupe (Interactive 2x magnifying glass for tissue inspection)
 - 💡 Interactive Medical Jargon Tooltips for complex clinical terms
 - 🗂️ Personal assessment history with trend tracking
 
