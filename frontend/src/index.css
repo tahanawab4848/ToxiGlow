@@ -79,6 +79,7 @@ button {
   padding: 1.4px !important;
   background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%) !important;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
   -webkit-mask-composite: xor !important;
   mask-composite: exclude !important;
   pointer-events: none !important;
@@ -1329,7 +1330,7 @@ button {
 .text-lg { font-size: 1.125rem; }
 .font-semibold { font-weight: 600; }
 .font-medium { font-weight: 500; }
-.whitespace-nowrap { whitespace: nowrap; }
+.whitespace-nowrap { white-space: nowrap; }
 .overflow-hidden { overflow: hidden; }
 .min-h-screen { min-height: 100vh; }
 .bg-black { background-color: #000000; }
@@ -1337,7 +1338,7 @@ button {
 .p-3 { padding: 0.75rem; }
 .p-4 { padding: 1rem; }
 .tracking-tight { letter-spacing: -0.025em; }
-.leading-relaxed { line-style: relaxed; }
+.leading-relaxed { line-height: 1.625; }
 .mb-8 { margin-bottom: 2rem; }
 .space-y-4 > * + * { margin-top: 1rem; }
 .text-5xl { font-size: 3rem; }
@@ -1368,4 +1369,55 @@ button.btn-cta:hover .btn-cta-shine {
   transition: opacity 0.3s;
   pointer-events: none;
   border-radius: inherit;
+}
+/* Medical Jargon Tooltip */
+.tg-jargon-tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+  border-bottom: 1px dotted hsl(var(--accent));
+  color: hsl(var(--accent));
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.tg-jargon-tooltip:hover {
+  color: #fff;
+}
+.tg-tooltip-text {
+  visibility: hidden;
+  width: max-content;
+  max-width: 250px;
+  background-color: hsl(var(--surface-alt));
+  color: #fff;
+  text-align: left;
+  border-radius: 6px;
+  padding: 8px 12px;
+  position: absolute;
+  z-index: 50;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  border: 1px solid hsl(var(--stroke));
+  font-size: 0.8rem;
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.tg-jargon-tooltip:hover .tg-tooltip-text {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.tg-tooltip-text::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -6px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: hsl(var(--surface-alt)) transparent transparent transparent;
 }

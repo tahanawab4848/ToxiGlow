@@ -27,6 +27,8 @@ Built for **BioNova Innovathon 2026**.
 - ⚡ Infection risk detection with visual markers
 - 📊 Severity score (0–100) with animated gauge
 - 📥 Downloadable PDF assessment report
+- 📧 "Email to my Doctor" fast-share integration
+- 💡 Interactive Medical Jargon Tooltips for complex clinical terms
 - 🗂️ Personal assessment history with trend tracking
 
 ### For Clinicians
@@ -49,12 +51,12 @@ Built for **BioNova Innovathon 2026**.
 |-------|-----------|
 | Frontend | React 19 + Vite |
 | Styling | Custom CSS — dark glassmorphism |
-| Backend | FastAPI (Python) |
+| Backend | FastAPI (Python, Threadpool Optimized) |
 | Database | SQLAlchemy + SQLite |
 | Image Processing | OpenCV + NumPy + Pillow |
-| AI Chat | OpenAI GPT (optional) |
+| AI Chat | OpenAI GPT (v1.x API Integration) |
 | PDF Reports | fpdf2 |
-| Auth | localStorage sessions + role-based access |
+| Auth | PBKDF2 Hashing + Role-based access |
 
 ---
 

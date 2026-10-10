@@ -3,11 +3,74 @@ import SeverityGauge from './SeverityGauge';
 import TissueChart from './TissueChart';
 import { API_BASE_URL } from '../config';
 
+const medicalDictionary = {
+  'granulation': 'New, healthy pink tissue - like a scab forming from the inside',
+  'necrosis': 'Dead tissue that the body cannot use anymore',
+  'erythema': 'Redness spreading outward - your body alarm signal',
+  'exudate': 'Fluid the wound is releasing',
+  'slough': 'Yellow/white waste material that needs cleaning',
+  'epithelial': 'New skin cells closing the surface',
+  'macerated': 'Soggy skin around the wound edge',
+  'eschar': 'Hard, dark, dead tissue (scab-like)'
+};
+
+function JargonTooltipText({ text }) {
+  if (!text) return null;
+  const terms = Object.keys(medicalDictionary).join('|');
+  const regex = new RegExp(`(${terms})`, 'gi');
+  const parts = text.split(regex);
+  
+  return (
+    <span>
+      {parts.map((part, i) => {
+        const lowerPart = part.toLowerCase();
+        if (medicalDictionary[lowerPart]) {
+          return (
+            <span key={i} className="tg-jargon-tooltip">
+              {part}
+              <span className="tg-tooltip-text">{medicalDictionary[lowerPart]}</span>
+            </span>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </span>
+  );
+}
+
 export default function ResultsDashboard({ results, rawImageSrc, comparison, onNewAssessment, user }) {
   const [sliderVal, setSliderVal] = useState(50);
   const [explainMode, setExplainMode] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [compareOpen, setCompareOpen] = useState(true);
+
+  const handleEmailDoctor = () => {
+    const subject = encodeURIComponent("Wound Assessment Report for Review");
+    const recommendation = getRecommendation(); // Re-use the existing logic below
+    
+    // Convert tissues to string list
+    const tissuesList = Object.entries(results.tissues)
+      .map(([k, v]) => `${k} (${Math.round(v)}%)`)
+      .join(', ');
+
+    const body = encodeURIComponent(`Hello Doctor,
+
+I am sharing my latest wound assessment from ToxiGlow for your review.
+
+=== ASSESSMENT SUMMARY ===
+Severity Score: ${results.severity_score}/100 (${results.severity_cat})
+Measurements: ${results.area} cm² area, ${results.perimeter} cm perimeter
+Dominant Tissues: ${tissuesList}
+
+=== AI NARRATIVE ===
+${results.narrative}
+
+Could you please let me know if I should schedule an in-person visit or adjust my dressing routine?
+
+Thank you.`);
+
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
 
   const handleDownloadPDF = async () => {
     setDownloading(true);
@@ -475,14 +538,15 @@ export default function ResultsDashboard({ results, rawImageSrc, comparison, onN
             📋 Assessment Summary
           </h3>
           <p style={{ lineHeight: '1.7', color: 'white', fontSize: '0.98rem' }}>
-            {explainMode 
-              ? results.narrative
-                  .replace(/granulation tissue/gi, 'healthy pink healing tissue')
-                  .replace(/necrosis/gi, 'dead tissue')
-                  .replace(/erythema/gi, 'spreading redness')
-                  .replace(/exudate/gi, 'discharge fluid')
-              : results.narrative
-            }
+            {explainMode ? (
+              results.narrative
+                .replace(/granulation tissue/gi, 'healthy pink healing tissue')
+                .replace(/necrosis/gi, 'dead tissue')
+                .replace(/erythema/gi, 'spreading redness')
+                .replace(/exudate/gi, 'discharge fluid')
+            ) : (
+              <JargonTooltipText text={results.narrative} />
+            )}
           </p>
         </div>
 
@@ -586,6 +650,9 @@ export default function ResultsDashboard({ results, rawImageSrc, comparison, onN
           <div className="tg-action-panel">
             <button className="tg-button tg-button-primary" onClick={handleDownloadPDF} disabled={downloading}>
               {downloading ? 'Generating PDF...' : '📥 DOWNLOAD ASSESSMENT REPORT'}
+            </button>
+            <button className="tg-button tg-button-secondary" onClick={handleEmailDoctor} style={{ backgroundColor: '#00d2ff15', color: '#00d2ff', border: '1px solid #00d2ff40' }}>
+              📧 EMAIL TO MY DOCTOR
             </button>
             <button className="tg-button tg-button-secondary" onClick={onNewAssessment}>
               🔄 NEW ASSESSMENT
